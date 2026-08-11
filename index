@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Sandbox & Projects</title>
+    <!-- Tailwind CSS for simple, crisp layout grid -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for clean minimal icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #0f0f0f;
+            color: #ffffff;
+        }
+
+        /* Essential Windows Metro Tile Press Animation */
+        .metro-tile {
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .metro-tile:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+        .metro-tile:active {
+            transform: scale(0.97);
+            filter: brightness(0.9);
+        }
+
+        /* Metro Color Palette Styles */
+        .bg-metro-blue { background-color: #0078D7; }
+        .bg-metro-green { background-color: #107C41; }
+        .bg-metro-purple { background-color: #5C2D91; }
+        .bg-metro-orange { background-color: #D83B01; }
+        .bg-metro-teal { background-color: #008272; }
+        .bg-metro-red { background-color: #E81123; }
+        .bg-metro-card { background-color: #1f1f1f; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-6 sm:p-12">
+
+    <div class="max-w-6xl mx-auto w-full">
+        <!-- BIG METRO HEADER -->
+        <header class="mb-10">
+            <span class="text-xs uppercase tracking-widest text-blue-400 font-semibold block mb-1">Just for Fun Developer Playground</span>
+            <h1 class="text-4xl sm:text-6xl font-extralight text-white tracking-tight leading-none mb-3">
+                learning <span class="font-bold uppercase text-blue-400">projects</span>
+            </h1>
+            <p class="text-base sm:text-lg font-light text-gray-400 max-w-xl">
+                A simple collection of my web experiments, code tests, and side projects.
+            </p>
+        </header>
+
+        <!-- METRO TILES GRID (Simple to edit!) -->
+        <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            <!-- PROJECT TILE 1 -->
+            <a href="project1.html" class="metro-tile bg-metro-blue p-6 min-h-[160px] flex flex-col justify-between group shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase tracking-widest bg-black/30 px-2 py-0.5 font-semibold">Web App</span>
+                    <i class="fa-solid fa-list-check text-2xl opacity-80"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-light group-hover:underline">Task Tracker</h2>
+                    <p class="text-xs text-blue-100 mt-1">A simple to-do app built with JavaScript.</p>
+                </div>
+            </a>
+
+            <!-- PROJECT TILE 2 -->
+            <a href="game.html" class="metro-tile bg-metro-green p-6 min-h-[160px] flex flex-col justify-between group shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase tracking-widest bg-black/30 px-2 py-0.5 font-semibold">Game</span>
+                    <i class="fa-solid fa-gamepad text-2xl opacity-80"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-light group-hover:underline">Tic-Tac-Toe</h2>
+                    <p class="text-xs text-emerald-100 mt-1">Classic mini game to test logic algorithms.</p>
+                </div>
+            </a>
+
+            <!-- PROJECT TILE 3 -->
+            <a href="calculator.html" class="metro-tile bg-metro-purple p-6 min-h-[160px] flex flex-col justify-between group shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase tracking-widest bg-black/30 px-2 py-0.5 font-semibold">Tool</span>
+                    <i class="fa-solid fa-calculator text-2xl opacity-80"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-light group-hover:underline">Calculator</h2>
+                    <p class="text-xs text-purple-100 mt-1">Basic Math & UI layout practice.</p>
+                </div>
+            </a>
+
+            <!-- PROJECT TILE 4 -->
+            <a href="experiment.html" class="metro-tile bg-metro-orange p-6 min-h-[160px] flex flex-col justify-between group shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase tracking-widest bg-black/30 px-2 py-0.5 font-semibold">Experiment</span>
+                    <i class="fa-solid fa-flask text-2xl opacity-80"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-light group-hover:underline">CSS Animations</h2>
+                    <p class="text-xs text-orange-100 mt-1">Testing 3D card flips and keyframes.</p>
+                </div>
+            </a>
+
+            <!-- PROJECT TILE 5 -->
+            <a href="weather.html" class="metro-tile bg-metro-teal p-6 min-h-[160px] flex flex-col justify-between group shadow-lg">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase tracking-widest bg-black/30 px-2 py-0.5 font-semibold">API Test</span>
+                    <i class="fa-solid fa-cloud-sun text-2xl opacity-80"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-light group-hover:underline">Weather Widget</h2>
+                    <p class="text-xs text-teal-100 mt-1">Fetching live weather data with JavaScript.</p>
+                </div>
+            </a>
+
+            <!-- HOW TO ADD MORE TILES -->
+            <div class="bg-metro-card border border-dashed border-white/20 p-6 min-h-[160px] flex flex-col justify-between text-gray-400">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase tracking-widest text-blue-400 font-semibold">Instructions</span>
+                    <i class="fa-solid fa-plus text-xl text-blue-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-light text-white mb-1">+ How to add a new project</h2>
+                    <p class="text-xs text-gray-400">Copy any tile block above in <code class="text-blue-300">index.html</code> and change the <code class="text-blue-300">href="..."</code> link to your new HTML file name!</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="max-w-6xl mx-auto w-full mt-16 pt-6 border-t border-white/10 text-xs text-gray-500 flex justify-between items-center">
+        <span>Personal Sandbox Hub</span>
+        <span>Hosted on GitHub Pages</span>
+    </footer>
+
+</body>
+</html>
