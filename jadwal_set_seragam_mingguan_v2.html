@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Jadwal & Panduan Set Seragam Mingguan</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Define uniformApp globally before Alpine initializes -->
+    <script>
+        function uniformApp() {
+            return {
+                viewMode: 'main', // 'main', 'weekCalendar', 'monthCalendar'
+                activeWeekId: 1,
+                currentWeekNumber: 1,
+                editingWeekId: 1,
+                showEditModal: false,
+                activeModalTab: 'weekly', // 'weekly', 'monday', 'specialDates', 'company'
+                showImageModal: false,
+                showDayDetailModal: false,
+                selectedCalendarDay: null,
+                activeImageSrc: '',
+                activeImageTitle: '',
+
+                companyName: 'PT Perusahaan Kita',
+                companyLogo: '',
+
+                calMonth: new Date().getMonth(),
+                calYear: new Date().getFullYear(),
+                calWeekStartDate: new Date(),
+                monthNamesIndo: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+
+                toast: {
+                    show: false,
+                    message: ''
+                },
+
+                weeks: [
+                    { id: 1, name: 'Minggu 1' },
+                    { id: 2, name: 'Minggu 2' },
+                    { id: 3, name: 'Minggu 3' },
+                    { id: 4, name: 'Minggu 4' }
+                ],
+
+                // Special Monday Uniform Set
+                mondaySpecialSet: {
+                    uniformName: 'Set Khusus Senin (Upacara / Formal Utama)',
+                    top: 'Kemeja Putih Lengan Panjang',
+                    bottom: 'Celana / Rok Hitam Formal',
+                    shoes: 'Sepatu Pantofel Hitam',
+                    image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80'
+                },
+
+                // Special Date Overrides
+                specialDates: [],
+
+                weeksData: [],
+
+                init() {
+                    const savedWeeks = localStorage.getItem('uniform_single_user_weeks_v2');
+                    const savedMonday = localStorage.getItem('uniform_monday_special');
+                    const savedSpecialDates = localStorage.getItem('uniform_special_dates');
+                    const savedCompanyLogo = localStorage.getItem('uniform_company_logo');
+                    const savedCompanyName = localStorage.getItem('uniform_company_name');
+
+                    if (savedCompanyLogo !== null) this.companyLogo = savedCompanyLogo;
+                    if (savedCompanyName !== null) this.companyName = savedCompanyName;
+
+                    if (savedWeeks && savedMonday) {
+                        try {
+                            this.weeksData = JSON.parse(savedWeeks);
+                            this.mondaySpecialSet = JSON.parse(savedMonday);
+                            if (savedSpecialDates) this.specialDates = JSON.parse(savedSpecialDates);
+                        } catch(e) {
+                            this.loadDefaultData();
+                        }
+                    } else {
+                        this.loadDefaultData();
+                    }
+
+                    // Auto detect current week of month (1-4)
+                    const date = new Date();
+                    const dayOfMonth = date.getDate();
+                    this.currentWeekNumber = Math.min(Math.max(Math.ceil(dayOfMonth / 7), 1), 4);
+                    this.activeWeekId = this.currentWeekNumber;
+                    this.editingWeekId = this.activeWeekId;
+
+                    this.resetCalWeek();
+                    this.applyMondaySpecialToAll();
+                },
+
+                formatYMD(d) {
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                },
+
+                getIndoDayName(dayIdx) {
+                    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                    return days[dayIdx];
+                },
+
+                // Canvas Image Compressor to prevent LocalStorage Overflow (5MB Limit)
+                compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.7) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.src = event.target.result;
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                let width = img.width;
+                                let height = img.height;
+
+                                if (width > height) {
+                                    if (width > maxWidth) {
+                                        height = Math.round((height * maxWidth) / width);
+                                        width = maxWidth;
+                                    }
+                                } else {
+                                    if (height > maxHeight) {
+                                        width = Math.round((width * maxHeight) / height);
+                                        height = maxHeight;
+                                    }
+                                }
+
+                                canvas.width = width;
+                                canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                resolve(canvas.toDataURL('image/jpeg', quality));
+                            };
+                            img.onerror = (err) => reject(err);
+                        };
+                        reader.onerror = (err) => reject(err);
+                    });
+                },
+
+                async handleImageUpload(event, targetObj) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.showToast('Memproses & mengompres foto...');
+
+                    try {
+                        const compressedBase64 = await this.compressImage(file);
+                        targetObj.image = compressedBase64;
+                        this.saveChanges();
+                        this.showToast('Foto berhasil dikompres & disimpan!');
+                    } catch (e) {
+                        console.error(e);
+                        this.showToast('Gagal memproses gambar. Coba file lain.');
+                    }
+                },
+
+                async handleCompanyLogoUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.showToast('Memproses logo...');
+
+                    try {
+                        const compressedBase64 = await this.compressImage(file, 300, 300, 0.8);
+                        this.companyLogo = compressedBase64;
+                        localStorage.setItem('uniform_company_logo', this.companyLogo);
+                        this.showToast('Logo perusahaan berhasil diperbarui!');
+                    } catch (e) {
+                        this.showToast('Gagal memproses logo.');
+                    }
+                },
+
+                async handleDayImageUpload(event, dayObj) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.showToast('Memproses foto harian...');
+
+                    try {
+                        const compressedBase64 = await this.compressImage(file);
+                        dayObj.image = compressedBase64;
+                        this.buildAllDailySchedules();
+                        this.saveChanges();
+                        this.showToast('Foto harian berhasil tersimpan!');
+                    } catch (e) {
+                        this.showToast('Gagal menyimpan foto harian.');
+                    }
+                },
+
+                async handleQuickWeekUpload(event) {
+                    const currentWeek = this.getSelectedWeekData();
+                    if (!currentWeek) return;
+
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.showToast('Memproses foto set mingguan...');
+
+                    try {
+                        const compressedBase64 = await this.compressImage(file);
+                        currentWeek.image = compressedBase64;
+                        this.saveChanges();
+                        this.showToast('Foto set mingguan berhasil diperbarui!');
+                    } catch (e) {
+                        this.showToast('Gagal menyimpan foto set mingguan.');
+                    }
+                },
+
+                getUniformForDate(d) {
+                    const dateStr = this.formatYMD(d);
+                    
+                    // 1. Check Special Event Override
+                    const sp = this.specialDates.find(s => s.date === dateStr);
+                    if (sp) {
+                        return {
+                            type: 'special',
+                            badge: 'Agenda Khusus',
+                            badgeClass: 'bg-rose-100 text-rose-800 border border-rose-200',
+                            title: sp.title,
+                            top: sp.top,
+                            bottom: sp.bottom,
+                            shoes: sp.shoes,
+                            image: sp.image || 'https://placehold.co/300x300/fef3c7/b45309?text=Event',
+                            weekTitle: 'Acara Pengecualian'
+                        };
+                    }
+
+                    const dayOfWeek = d.getDay();
+
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        return {
+                            type: 'weekend',
+                            badge: 'Libur',
+                            badgeClass: 'bg-slate-100 text-slate-600',
+                            title: 'Akhir Pekan',
+                            top: 'Pakaian Bebas',
+                            bottom: 'Pakaian Bebas',
+                            shoes: 'Bebas Rapi',
+                            image: '',
+                            weekTitle: 'Tidak Ada Jam Kerja'
+                        };
+                    }
+
+                    if (dayOfWeek === 5) {
+                        return {
+                            type: 'friday',
+                            badge: 'Hari Bebas',
+                            badgeClass: 'bg-emerald-100 text-emerald-800',
+                            title: 'Jumat Bebas / Kasual',
+                            top: 'Pakaian Bebas Bersopan',
+                            bottom: 'Bebas Bersopan',
+                            shoes: 'Bebas Rapi',
+                            image: '',
+                            weekTitle: 'Ketentuan Hari Jumat'
+                        };
+                    }
+
+                    if (dayOfWeek === 1) {
+                        return {
+                            type: 'monday',
+                            badge: 'Senin Khusus',
+                            badgeClass: 'bg-amber-100 text-amber-800',
+                            title: this.mondaySpecialSet.uniformName,
+                            top: this.mondaySpecialSet.top,
+                            bottom: this.mondaySpecialSet.bottom,
+                            shoes: this.mondaySpecialSet.shoes,
+                            image: this.mondaySpecialSet.image,
+                            weekTitle: 'Set Resmi Senin Utama'
+                        };
+                    }
+
+                    const dayOfMonth = d.getDate();
+                    const weekNum = Math.min(Math.max(Math.ceil(dayOfMonth / 7), 1), 4);
+                    const weekData = this.weeksData.find(w => w.id === weekNum) || this.weeksData[0];
+
+                    let dayKey = 'selasa';
+                    if (dayOfWeek === 3) dayKey = 'rabu';
+                    if (dayOfWeek === 4) dayKey = 'kamis';
+
+                    const dayInfo = weekData.days[dayKey] || { top: '-', bottom: '-', shoes: '-' };
+
+                    return {
+                        type: 'weekly',
+                        badge: `Set M${weekNum}`,
+                        badgeClass: 'bg-brand-100 text-brand-800',
+                        title: `${weekData.title} (${this.getIndoDayName(dayOfWeek)})`,
+                        top: dayInfo.top,
+                        bottom: dayInfo.bottom,
+                        shoes: dayInfo.shoes,
+                        image: dayInfo.image || weekData.image,
+                        weekTitle: weekData.title
+                    };
+                },
+
+                getWeekCalendarDays() {
+                    const days = [];
+                    const start = new Date(this.calWeekStartDate);
+                    
+                    for (let i = 0; i < 7; i++) {
+                        const cur = new Date(start);
+                        cur.setDate(start.getDate() + i);
+                        const todayStr = this.formatYMD(new Date());
+                        
+                        days.push({
+                            dateObj: cur,
+                            dateStr: this.formatYMD(cur),
+                            dayNameIndo: this.getIndoDayName(cur.getDay()),
+                            dateFormatted: `${cur.getDate()} ${this.monthNamesIndo[cur.getMonth()].substring(0, 3)}`,
+                            isToday: this.formatYMD(cur) === todayStr,
+                            uniform: this.getUniformForDate(cur)
+                        });
+                    }
+                    return days;
+                },
+
+                getWeekRangeText() {
+                    const days = this.getWeekCalendarDays();
+                    if (days.length === 0) return '';
+                    return `${days[0].dateFormatted} ${days[0].dateObj.getFullYear()} - ${days[6].dateFormatted} ${days[6].dateObj.getFullYear()}`;
+                },
+
+                changeCalWeek(dir) {
+                    const next = new Date(this.calWeekStartDate);
+                    next.setDate(next.getDate() + (dir * 7));
+                    this.calWeekStartDate = next;
+                },
+
+                resetCalWeek() {
+                    const now = new Date();
+                    const day = now.getDay();
+                    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+                    this.calWeekStartDate = new Date(now.setDate(diff));
+                },
+
+                getMonthGridDays() {
+                    const cells = [];
+                    const firstDay = new Date(this.calYear, this.calMonth, 1);
+                    const lastDay = new Date(this.calYear, this.calMonth + 1, 0);
+
+                    let startOffset = firstDay.getDay() - 1;
+                    if (startOffset < 0) startOffset = 6;
+
+                    const prevMonthLastDay = new Date(this.calYear, this.calMonth, 0).getDate();
+                    for (let i = startOffset - 1; i >= 0; i--) {
+                        const d = new Date(this.calYear, this.calMonth - 1, prevMonthLastDay - i);
+                        cells.push({
+                            dateObj: d,
+                            dateStr: this.formatYMD(d),
+                            dayNum: d.getDate(),
+                            isCurrentMonth: false,
+                            isToday: false,
+                            uniform: null
+                        });
+                    }
+
+                    const todayStr = this.formatYMD(new Date());
+                    for (let day = 1; day <= lastDay.getDate(); day++) {
+                        const d = new Date(this.calYear, this.calMonth, day);
+                        cells.push({
+                            dateObj: d,
+                            dateStr: this.formatYMD(d),
+                            dayNum: day,
+                            isCurrentMonth: true,
+                            isToday: this.formatYMD(d) === todayStr,
+                            uniform: this.getUniformForDate(d)
+                        });
+                    }
+
+                    const remaining = 7 - (cells.length % 7);
+                    if (remaining < 7) {
+                        for (let day = 1; day <= remaining; day++) {
+                            const d = new Date(this.calYear, this.calMonth + 1, day);
+                            cells.push({
+                                dateObj: d,
+                                dateStr: this.formatYMD(d),
+                                dayNum: day,
+                                isCurrentMonth: false,
+                                isToday: false,
+                                uniform: null
+                            });
+                        }
+                    }
+
+                    return cells;
+                },
+
+                changeCalMonth(dir) {
+                    this.calMonth += dir;
+                    if (this.calMonth < 0) {
+                        this.calMonth = 11;
+                        this.calYear--;
+                    } else if (this.calMonth > 11) {
+                        this.calMonth = 0;
+                        this.calYear++;
+                    }
+                },
+
+                resetCalMonth() {
+                    const now = new Date();
+                    this.calMonth = now.getMonth();
+                    this.calYear = now.getFullYear();
+                },
+
+                openDayDetail(dayCell) {
+                    if (!dayCell || !dayCell.uniform) return;
+                    this.selectedCalendarDay = {
+                        ...dayCell,
+                        dateFormatted: `${dayCell.dayNameIndo || this.getIndoDayName(dayCell.dateObj.getDay())}, ${dayCell.dateObj.getDate()} ${this.monthNamesIndo[dayCell.dateObj.getMonth()]} ${dayCell.dateObj.getFullYear()}`
+                    };
+                    this.showDayDetailModal = true;
+                },
+
+                loadDefaultData() {
+                    this.mondaySpecialSet = {
+                        uniformName: 'Set Khusus Senin Formal',
+                        top: 'Kemeja Putih Lengan Panjang',
+                        bottom: 'Celana / Rok Hitam Formal',
+                        shoes: 'Sepatu Pantofel Hitam',
+                        image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80'
+                    };
+
+                    this.specialDates = [
+                        {
+                            id: 1,
+                            date: '2026-08-17',
+                            title: 'Upacara HUT RI ke-81',
+                            top: 'Kemeja Putih Lengan Panjang + Dasi / Pin Flag',
+                            bottom: 'Celana / Rok Hitam Upacara',
+                            shoes: 'Sepatu Pantofel Kilap Hitam',
+                            image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80'
+                        }
+                    ];
+
+                    this.weeksData = [
+                        {
+                            id: 1,
+                            code: 'SET-M1',
+                            title: 'Set Mingguan 1: Seragam Biru & Oxford',
+                            description: 'Variasi pakaian bernuansa biru formal dan kemeja oxford untuk hari Selasa - Kamis.',
+                            image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80',
+                            colors: [
+                                { hex: '#1e3a8a', label: 'Biru Tua' },
+                                { hex: '#60a5fa', label: 'Biru Muda' },
+                                { hex: '#0f172a', label: 'Hitam' }
+                            ],
+                            days: {
+                                selasa: { top: 'Kemeja Biru Muda Lengan Panjang', bottom: 'Celana / Rok Navy Dark', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80' },
+                                rabu: { top: 'Kemeja Oxford Putih / Light Blue', bottom: 'Celana / Rok Bahan Hitam', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80' },
+                                kamis: { top: 'Batik Motif Elegan / Kemeja Motif', bottom: 'Celana / Rok Navy Dark', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80' }
+                            },
+                            dailySchedule: []
+                        },
+                        {
+                            id: 2,
+                            code: 'SET-M2',
+                            title: 'Set Mingguan 2: Seragam Oxford Abu-Abu',
+                            description: 'Variasi warna abu-abu oxford profesional untuk Selasa hingga Kamis.',
+                            image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80',
+                            colors: [
+                                { hex: '#475569', label: 'Abu Tua' },
+                                { hex: '#e2e8f0', label: 'Abu Muda' },
+                                { hex: '#0f172a', label: 'Hitam' }
+                            ],
+                            days: {
+                                selasa: { top: 'Kemeja Oxford Abu-Abu Muda', bottom: 'Celana / Rok Bahan Abu Tua', shoes: 'Sepatu Loafer / Pantofel Hitam', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80' },
+                                rabu: { top: 'Kemeja Putih Garis Tipis (Striped)', bottom: 'Celana / Rok Hitam Formal', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80' },
+                                kamis: { top: 'Batik Solus / Kemeja Batik Kontemporer', bottom: 'Celana / Rok Bahan Abu Tua', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80' }
+                            },
+                            dailySchedule: []
+                        },
+                        {
+                            id: 3,
+                            code: 'SET-M3',
+                            title: 'Set Mingguan 3: Seragam Earth Tone & Krem',
+                            description: 'Kombinasi warna krem, cokelat, dan hangat untuk pertengahan bulan.',
+                            image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&auto=format&fit=crop&q=80',
+                            colors: [
+                                { hex: '#d97706', label: 'Cokelat' },
+                                { hex: '#fef3c7', label: 'Krem' },
+                                { hex: '#78350f', label: 'Cokelat Tua' }
+                            ],
+                            days: {
+                                selasa: { top: 'Kemeja Krem / Cokelat Muda', bottom: 'Celana / Rok Khaki Cokelat', shoes: 'Sepatu Pantofel Cokelat Tua', image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&auto=format&fit=crop&q=80' },
+                                rabu: { top: 'Kemeja Formal Soft Beige', bottom: 'Celana / Rok Cokelat Gelap', shoes: 'Sepatu Kulit Cokelat', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80' },
+                                kamis: { top: 'Batik Motif Cokelat / Earth Tone', bottom: 'Celana / Rok Khaki', shoes: 'Sepatu Kulit Cokelat', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80' }
+                            },
+                            dailySchedule: []
+                        },
+                        {
+                            id: 4,
+                            code: 'SET-M4',
+                            title: 'Set Mingguan 4: Seragam Monokrom Modern',
+                            description: 'Variasi pakaian monokrom hitam putih untuk minggu penutup bulan.',
+                            image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80',
+                            colors: [
+                                { hex: '#0f172a', label: 'Hitam' },
+                                { hex: '#ffffff', label: 'Putih' },
+                                { hex: '#94a3b8', label: 'Abu-abu' }
+                            ],
+                            days: {
+                                selasa: { top: 'Kemeja Monokrom Striped / Garis', bottom: 'Celana / Rok Hitam Formal', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80' },
+                                rabu: { top: 'Kemeja Putih Dasi Dark Charcoal', bottom: 'Celana / Rok Hitam Formal', shoes: 'Sepatu Pantofel Hitam Kilap', image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80' },
+                                kamis: { top: 'Batik Monokrom Hitam-Putih', bottom: 'Celana / Rok Hitam Formal', shoes: 'Sepatu Pantofel Hitam', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80' }
+                            },
+                            dailySchedule: []
+                        }
+                    ];
+
+                    this.buildAllDailySchedules();
+                },
+
+                addSpecialDate() {
+                    const todayStr = this.getTodayDateStr();
+                    this.specialDates.push({
+                        id: Date.now(),
+                        date: todayStr,
+                        title: 'Agenda / Acara Khusus',
+                        top: 'Kemeja Formal Acara',
+                        bottom: 'Celana / Rok Formal',
+                        shoes: 'Sepatu Pantofel Hitam',
+                        image: ''
+                    });
+                },
+
+                removeSpecialDate(index) {
+                    this.specialDates.splice(index, 1);
+                },
+
+                getTodayDateStr() {
+                    const d = new Date();
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                },
+
+                formatDateIndo(dateStr) {
+                    if (!dateStr) return '';
+                    const [y, m, d] = dateStr.split('-');
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+                    return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+                },
+
+                getTodaySpecialDate() {
+                    const todayStr = this.getTodayDateStr();
+                    return this.specialDates.find(sd => sd.date === todayStr) || null;
+                },
+
+                getUpcomingSpecialDates() {
+                    return [...this.specialDates].sort((a, b) => new Date(a.date) - new Date(b.date));
+                },
+
+                openImageModal(src, title) {
+                    this.activeImageSrc = src || 'https://placehold.co/600x400/1e293b/ffffff?text=Foto+Seragam';
+                    this.activeImageTitle = title || 'Foto Seragam';
+                    this.showImageModal = true;
+                },
+
+                getTodayUniformImage() {
+                    const today = this.getTodayUniform();
+                    if (!today) return 'https://placehold.co/300x300/1e293b/ffffff?text=Seragam';
+                    if (today.image) {
+                        return today.image;
+                    }
+                    if (today.isMondaySpecial) {
+                        return this.mondaySpecialSet.image;
+                    }
+                    return this.getCurrentWeekData().image;
+                },
+
+                applyMondaySpecialToAll() {
+                    this.weeksData.forEach(w => {
+                        this.buildDailyScheduleForWeek(w);
+                    });
+                },
+
+                buildAllDailySchedules() {
+                    this.weeksData.forEach(w => {
+                        this.buildDailyScheduleForWeek(w);
+                    });
+                },
+
+                buildDailyScheduleForWeek(weekObj) {
+                    weekObj.dailySchedule = [
+                        {
+                            dayName: 'Senin',
+                            isMondaySpecial: true,
+                            isFreeDay: false,
+                            uniformName: this.mondaySpecialSet.uniformName,
+                            top: this.mondaySpecialSet.top,
+                            bottom: this.mondaySpecialSet.bottom,
+                            shoes: this.mondaySpecialSet.shoes,
+                            image: this.mondaySpecialSet.image
+                        },
+                        {
+                            dayName: 'Selasa',
+                            isMondaySpecial: false,
+                            isFreeDay: false,
+                            uniformName: weekObj.title + ' (Selasa)',
+                            top: weekObj.days.selasa.top,
+                            bottom: weekObj.days.selasa.bottom,
+                            shoes: weekObj.days.selasa.shoes,
+                            image: weekObj.days.selasa.image || weekObj.image
+                        },
+                        {
+                            dayName: 'Rabu',
+                            isMondaySpecial: false,
+                            isFreeDay: false,
+                            uniformName: weekObj.title + ' (Rabu)',
+                            top: weekObj.days.rabu.top,
+                            bottom: weekObj.days.rabu.bottom,
+                            shoes: weekObj.days.rabu.shoes,
+                            image: weekObj.days.rabu.image || weekObj.image
+                        },
+                        {
+                            dayName: 'Kamis',
+                            isMondaySpecial: false,
+                            isFreeDay: false,
+                            uniformName: weekObj.title + ' (Kamis)',
+                            top: weekObj.days.kamis.top,
+                            bottom: weekObj.days.kamis.bottom,
+                            shoes: weekObj.days.kamis.shoes,
+                            image: weekObj.days.kamis.image || weekObj.image
+                        },
+                        {
+                            dayName: 'Jumat',
+                            isMondaySpecial: false,
+                            isFreeDay: true,
+                            uniformName: 'Hari Bebas / Kasual Rapi',
+                            top: 'Pakaian Bebas Bersopan',
+                            bottom: 'Bebas Bersopan',
+                            shoes: 'Bebas Rapi',
+                            image: ''
+                        }
+                    ];
+                },
+
+                getSelectedWeekData() {
+                    const found = this.weeksData.find(w => w.id === this.activeWeekId);
+                    if (found) return found;
+                    return this.weeksData[0] || {
+                        name: 'Minggu ' + this.activeWeekId,
+                        title: 'Set Seragam Mingguan',
+                        description: '-',
+                        image: 'https://placehold.co/600x400/f1f5f9/475569?text=Foto+Seragam',
+                        colors: [],
+                        days: {
+                            selasa: { top: '-', bottom: '-', shoes: '-' },
+                            rabu: { top: '-', bottom: '-', shoes: '-' },
+                            kamis: { top: '-', bottom: '-', shoes: '-' }
+                        },
+                        dailySchedule: []
+                    };
+                },
+
+                getCurrentWeekData() {
+                    return this.weeksData.find(w => w.id === this.currentWeekNumber) || this.getSelectedWeekData();
+                },
+
+                getEditWeekData() {
+                    return this.weeksData.find(w => w.id == this.editingWeekId) || null;
+                },
+
+                getTodayName() {
+                    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                    return days[new Date().getDay()];
+                },
+
+                getTodayFormatted() {
+                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    return new Date().toLocaleDateString('id-ID', options);
+                },
+
+                isToday(dayName) {
+                    return this.getTodayName().toLowerCase() === dayName.toLowerCase();
+                },
+
+                getTodayUniform() {
+                    const specialDate = this.getTodaySpecialDate();
+                    if (specialDate) {
+                        return {
+                            isSpecialDate: true,
+                            isFreeDay: false,
+                            uniformName: specialDate.title,
+                            top: specialDate.top,
+                            bottom: specialDate.bottom,
+                            shoes: specialDate.shoes,
+                            image: specialDate.image
+                        };
+                    }
+
+                    const currentWeek = this.getCurrentWeekData();
+                    if (!currentWeek || !currentWeek.dailySchedule) return null;
+                    const todayStr = this.getTodayName();
+                    
+                    if (todayStr.toLowerCase() === 'jumat') {
+                        return {
+                            isSpecialDate: false,
+                            isFreeDay: true,
+                            uniformName: 'Hari Jumat (Pakaian Bebas / Kasual)',
+                            top: 'Bebas Bersopan',
+                            bottom: 'Bebas Bersopan',
+                            shoes: 'Bebas Rapi'
+                        };
+                    }
+
+                    return currentWeek.dailySchedule.find(d => d.dayName.toLowerCase() === todayStr.toLowerCase()) || null;
+                },
+
+                saveChanges() {
+                    try {
+                        this.applyMondaySpecialToAll();
+                        localStorage.setItem('uniform_single_user_weeks_v2', JSON.stringify(this.weeksData));
+                        localStorage.setItem('uniform_monday_special', JSON.stringify(this.mondaySpecialSet));
+                        localStorage.setItem('uniform_special_dates', JSON.stringify(this.specialDates));
+                        localStorage.setItem('uniform_company_logo', this.companyLogo);
+                        localStorage.setItem('uniform_company_name', this.companyName);
+                        this.showEditModal = false;
+                        this.showToast('Jadwal seragam & informasi berhasil disimpan!');
+                    } catch (e) {
+                        console.error('Storage quota exceeded', e);
+                        this.showToast('Memori penuh! Hapus/ganti beberapa foto dengan ukuran lebih kecil.');
+                    }
+                },
+
+                resetToDefault() {
+                    this.loadDefaultData();
+                    this.companyLogo = '';
+                    this.companyName = 'PT Perusahaan Kita';
+                    localStorage.removeItem('uniform_single_user_weeks_v2');
+                    localStorage.removeItem('uniform_monday_special');
+                    localStorage.removeItem('uniform_special_dates');
+                    localStorage.removeItem('uniform_company_logo');
+                    localStorage.removeItem('uniform_company_name');
+                    this.showToast('Data dikembalikan ke standar awal.');
+                },
+
+                showToast(msg) {
+                    this.toast.message = msg;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3000);
+                },
+
+                printSchedule() {
+                    window.print();
+                }
+            };
+        }
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('uniformApp', uniformApp);
+        });
+    </script>
+
+    <!-- Alpine.js CDN defer loaded -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; }
+            .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+            .border { border-color: #cbd5e1 !important; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen antialiased flex flex-col selection:bg-brand-500 selection:text-white" 
+      x-data="uniformApp()">
+
+    <!-- Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-shirt text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-900 text-lg sm:text-xl leading-tight">Jadwal Seragam</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Panduan Rotasi 3 Jenis Pakaian Mingguan</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <!-- View Mode Toggle Buttons -->
+                    <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+                        <button @click="viewMode = 'main'" 
+                                :class="viewMode === 'main' ? 'bg-white text-brand-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                                class="px-2.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span class="hidden sm:inline">Set</span>
+                        </button>
+                        <button @click="viewMode = 'weekCalendar'" 
+                                :class="viewMode === 'weekCalendar' ? 'bg-white text-brand-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                                class="px-2.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-week"></i>
+                            <span class="hidden sm:inline">Kalender Minggu</span>
+                        </button>
+                        <button @click="viewMode = 'monthCalendar'" 
+                                :class="viewMode === 'monthCalendar' ? 'bg-white text-brand-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                                class="px-2.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <span class="hidden sm:inline">Kalender Bulan</span>
+                        </button>
+                    </div>
+
+                    <button @click="printSchedule()" class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition" title="Cetak / PDF">
+                        <i class="fa-solid fa-print"></i>
+                        <span class="hidden md:inline">Cetak</span>
+                    </button>
+
+                    <button @click="showEditModal = true" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium shadow-sm transition">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span class="hidden sm:inline">Kelola Set</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        <!-- Area Logo Perusahaan & Nama Instansi di Bagian Atas Area Jadwal -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4 w-full sm:w-auto">
+                <!-- Slot Gambar Logo -->
+                <div class="flex-shrink-0">
+                    <template x-if="companyLogo">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-200 p-1.5 bg-white shadow-sm flex items-center justify-center overflow-hidden">
+                            <img :src="companyLogo" class="max-w-full max-h-full object-contain" alt="Logo Perusahaan">
+                        </div>
+                    </template>
+                    <template x-if="!companyLogo">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                            <i class="fa-solid fa-building text-xl mb-0.5 text-slate-300"></i>
+                            <span class="text-[9px] font-medium text-slate-400 leading-tight">Logo</span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Nama Instansi & Keterangan -->
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-800 uppercase tracking-wider">Perusahaan / Instansi</span>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5" x-text="companyName || 'Nama Perusahaan'"></h2>
+                    <p class="text-xs text-slate-500">Panduan Resmi Seragam & Aturan Pakaian Kerja Mingguan</p>
+                </div>
+            </div>
+        </div>
+
+        <template x-if="viewMode === 'weekCalendar'">
+            <div class="space-y-6 no-print">
+                <!-- Header Control Minggu -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-calendar-week"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Kalender Seragam Mingguan</h2>
+                            <p class="text-xs text-slate-500" x-text="getWeekRangeText()"></p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button @click="changeCalWeek(-1)" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                            <i class="fa-solid fa-chevron-left"></i> Minggu Lalu
+                        </button>
+                        <button @click="resetCalWeek()" class="px-3 py-2 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 text-xs font-bold transition">
+                            Minggu Ini
+                        </button>
+                        <button @click="changeCalWeek(1)" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                            Minggu Depan <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards Grid 7 Hari Minggu -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+                    <template x-for="day in getWeekCalendarDays()" :key="day.dateStr">
+                        <div class="bg-white rounded-2xl border p-4 space-y-3 flex flex-col justify-between transition hover:shadow-md"
+                             :class="[
+                                 day.isToday ? 'ring-2 ring-brand-500 border-brand-500 bg-brand-50/10' : 'border-slate-200',
+                                 day.uniform.type === 'special' ? 'bg-amber-50/30 border-amber-200' : ''
+                             ]">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500" x-text="day.dayNameIndo"></span>
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded-full" :class="day.uniform.badgeClass" x-text="day.uniform.badge"></span>
+                                </div>
+                                <div class="text-lg font-extrabold text-slate-900" x-text="day.dateFormatted"></div>
+
+                                <!-- Image Preview -->
+                                <template x-if="day.uniform.image">
+                                    <div class="relative h-28 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
+                                         @click="openImageModal(day.uniform.image, day.dayNameIndo + ' - ' + day.uniform.title)">
+                                        <img :src="day.uniform.image" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.src='https://placehold.co/300x300/1e293b/ffffff?text=Seragam'">
+                                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition flex items-center justify-center">
+                                            <i class="fa-solid fa-magnifying-glass-plus text-xs text-white opacity-80"></i>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <h4 class="font-bold text-xs text-slate-800 leading-snug line-clamp-2" x-text="day.uniform.title"></h4>
+
+                                <template x-if="day.uniform.type !== 'weekend' && day.uniform.type !== 'friday'">
+                                    <div class="space-y-1 text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <p><span class="text-slate-400">Atasan:</span> <strong class="text-slate-700" x-text="day.uniform.top"></strong></p>
+                                        <p><span class="text-slate-400">Bawahan:</span> <strong class="text-slate-700" x-text="day.uniform.bottom"></strong></p>
+                                        <p><span class="text-slate-400">Sepatu:</span> <strong class="text-slate-700" x-text="day.uniform.shoes"></strong></p>
+                                    </div>
+                                </template>
+
+                                <template x-if="day.uniform.type === 'friday' || day.uniform.type === 'weekend'">
+                                    <div class="p-2 bg-emerald-50 text-emerald-800 text-[11px] rounded-lg border border-emerald-100 italic">
+                                        Pakaian bebas, sopan & rapi.
+                                    </div>
+                                </template>
+                            </div>
+
+                            <button @click="openDayDetail(day)" class="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] rounded-lg transition mt-2">
+                                Detail Seragam
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="viewMode === 'monthCalendar'">
+            <div class="space-y-6 no-print">
+                <!-- Header Control Bulan -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-calendar-days"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900" x-text="`${monthNamesIndo[calMonth]} ${calYear}`"></h2>
+                            <p class="text-xs text-slate-500">Klik tanggal untuk melihat rincian seragam lengkap</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button @click="changeCalMonth(-1)" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                            <i class="fa-solid fa-chevron-left"></i> Bulan Lalu
+                        </button>
+                        <button @click="resetCalMonth()" class="px-3 py-2 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 text-xs font-bold transition">
+                            Bulan Ini
+                        </button>
+                        <button @click="changeCalMonth(1)" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                            Bulan Depan <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid 7 Columns (Senin -> Minggu) -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="grid grid-cols-7 bg-slate-100 border-b border-slate-200 text-center font-bold text-xs text-slate-600 py-3">
+                        <div>Senin</div>
+                        <div>Selasa</div>
+                        <div>Rabu</div>
+                        <div>Kamis</div>
+                        <div>Jumat</div>
+                        <div class="text-rose-600">Sabtu</div>
+                        <div class="text-rose-600">Minggu</div>
+                    </div>
+
+                    <!-- Month Days Cells -->
+                    <div class="grid grid-cols-7 divide-x divide-y divide-slate-100">
+                        <template x-for="cell in getMonthGridDays()" :key="cell.dateStr">
+                            <div @click="cell.isCurrentMonth && openDayDetail(cell)"
+                                 class="min-h-[110px] p-2 transition flex flex-col justify-between group"
+                                 :class="[
+                                     cell.isCurrentMonth ? 'cursor-pointer hover:bg-slate-50' : 'bg-slate-50/50 opacity-40 pointer-events-none',
+                                     cell.isToday ? 'bg-brand-50/40 ring-2 ring-brand-500 ring-inset' : ''
+                                 ]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"
+                                          :class="cell.isToday ? 'bg-brand-600 text-white' : 'text-slate-700'"
+                                          x-text="cell.dayNum">
+                                    </span>
+                                    <template x-if="cell.uniform">
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded" :class="cell.uniform.badgeClass" x-text="cell.uniform.badge"></span>
+                                    </template>
+                                </div>
+
+                                <template x-if="cell.isCurrentMonth && cell.uniform">
+                                    <div class="space-y-1 my-1">
+                                        <p class="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight group-hover:text-brand-600 transition" x-text="cell.uniform.title"></p>
+                                        <p class="text-[10px] text-slate-500 line-clamp-1" x-text="cell.uniform.top"></p>
+                                    </div>
+                                </template>
+
+                                <div class="flex justify-end">
+                                    <template x-if="cell.uniform && cell.uniform.image">
+                                        <div class="w-6 h-6 rounded overflow-hidden border border-slate-200">
+                                            <img :src="cell.uniform.image" class="w-full h-full object-cover">
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <div x-show="viewMode === 'main'">
+            <!-- Active Week Hero Banner -->
+            <div class="bg-gradient-to-r from-orange-600 via-amber-600 to-blue-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden no-print mb-6">
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2 max-w-2xl">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-white/20 text-orange-100 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-white/20 uppercase tracking-wider">Status Seragam Hari Ini</span>
+                            <span class="text-xs text-orange-100/90" x-text="getTodayFormatted()"></span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight" x-text="getTodayUniform() ? getTodayUniform().uniformName : 'Tidak Ada Aturan Wajib Hari Ini'"></h2>
+                        <template x-if="getTodayUniform()">
+                            <p class="text-sm text-orange-100 flex flex-wrap gap-x-4 gap-y-1 pt-1">
+                                <span><i class="fa-solid fa-shirt text-amber-300 mr-1"></i> <strong x-text="getTodayUniform().top"></strong></span>
+                                <span><i class="fa-solid fa-socks text-amber-300 mr-1"></i> <strong x-text="getTodayUniform().bottom"></strong></span>
+                                <span><i class="fa-solid fa-shoe-prints text-amber-300 mr-1"></i> <strong x-text="getTodayUniform().shoes"></strong></span>
+                            </p>
+                        </template>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 h-20 rounded-xl overflow-hidden bg-black/20 border-2 border-white/30 shadow-inner flex-shrink-0 cursor-pointer group relative"
+                             @click="openImageModal(getTodayUniformImage(), 'Seragam Hari Ini')">
+                            <img :src="getTodayUniformImage()" class="w-full h-full object-cover group-hover:scale-110 transition" onerror="this.src='https://placehold.co/100x100/1e293b/ffffff?text=Foto'">
+                            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-xs text-orange-200 block">Minggu Berjalan:</span>
+                            <span class="text-xl font-bold text-white" x-text="`Minggu Ke-${currentWeekNumber}`"></span>
+                            <span class="text-[11px] block text-amber-200 font-medium" x-text="getCurrentWeekData().title"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tampilan Seragam Agenda & Tanggal Khusus -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4 mb-6 no-print">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
+                            <i class="fa-solid fa-calendar-star"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base">Seragam Agenda & Tanggal Khusus</h3>
+                            <p class="text-xs text-slate-500">Pengecualian seragam harian untuk tanggal atau acara tertentu</p>
+                        </div>
+                    </div>
+                </div>
+
+                <template x-if="specialDates.length === 0">
+                    <div class="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-1">
+                        <p class="text-xs text-slate-500">Belum ada agenda khusus yang ditambahkan.</p>
+                        <p class="text-[11px] text-slate-400">Tanggal khusus dapat diatur melalui menu <strong class="text-slate-600">Kelola Set</strong> pada header.</p>
+                    </div>
+                </template>
+
+                <template x-if="specialDates.length > 0">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="sd in getUpcomingSpecialDates()" :key="sd.id">
+                            <div class="bg-amber-50/40 border border-amber-200 rounded-xl p-4 space-y-3 relative hover:shadow-md transition">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="space-y-1">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wider" x-text="formatDateIndo(sd.date)"></span>
+                                        <h4 class="font-bold text-slate-900 text-sm leading-snug" x-text="sd.title"></h4>
+                                    </div>
+                                    <template x-if="sd.image">
+                                        <div class="w-14 h-14 rounded-lg overflow-hidden border border-amber-200 bg-white shadow-sm flex-shrink-0 cursor-pointer group relative"
+                                             @click="openImageModal(sd.image, sd.title)">
+                                            <img :src="sd.image" class="w-full h-full object-cover group-hover:scale-110 transition" onerror="this.src='https://placehold.co/100x100/fef3c7/b45309?text=Event'">
+                                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[10px]">
+                                                <i class="fa-solid fa-magnifying-glass"></i>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="space-y-1 text-xs bg-white/80 p-2.5 rounded-lg border border-amber-100/80">
+                                    <p><span class="text-slate-400">Atasan:</span> <strong class="text-slate-800" x-text="sd.top"></strong></p>
+                                    <p><span class="text-slate-400">Bawahan:</span> <strong class="text-slate-800" x-text="sd.bottom"></strong></p>
+                                    <p><span class="text-slate-400">Sepatu:</span> <strong class="text-slate-800" x-text="sd.shoes"></strong></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Main Schedule Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Side: Set Selector & Overview -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                            <h3 class="font-bold text-slate-900 text-base">Pilih Set Mingguan</h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium" x-text="`Aktif: M${activeWeekId}`"></span>
+                        </div>
+
+                        <!-- Week Tabs -->
+                        <div class="grid grid-cols-4 gap-2">
+                            <template x-for="w in weeks" :key="w.id">
+                                <button @click="activeWeekId = w.id" 
+                                        :class="activeWeekId === w.id ? 'bg-brand-600 text-white font-bold shadow-md shadow-brand-500/20' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium'"
+                                        class="py-2.5 px-2 rounded-xl text-xs transition text-center flex flex-col items-center gap-0.5">
+                                    <span x-text="w.name"></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Selected Week Detail Card -->
+                        <div class="space-y-4 pt-2">
+                            <div class="relative h-48 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group">
+                                <img :src="getSelectedWeekData().image" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.src='https://placehold.co/600x400/1e293b/ffffff?text=Set+Seragam'">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end justify-between p-3 text-white">
+                                    <span class="text-xs font-semibold" x-text="getSelectedWeekData().title"></span>
+                                    <div class="flex items-center gap-1">
+                                        <label class="cursor-pointer text-xs bg-brand-600 hover:bg-brand-700 text-white font-semibold px-2 py-1 rounded-lg shadow transition flex items-center gap-1">
+                                            <i class="fa-solid fa-upload"></i>
+                                            <input type="file" accept="image/*" class="hidden" @change="handleQuickWeekUpload($event)">
+                                        </label>
+                                        <button @click="openImageModal(getSelectedWeekData().image, getSelectedWeekData().title)" 
+                                                class="text-xs bg-white/90 hover:bg-white text-slate-900 font-semibold px-2 py-1 rounded-lg shadow transition">
+                                            <i class="fa-solid fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-slate-600 leading-relaxed" x-text="getSelectedWeekData().description"></p>
+
+                            <!-- Tuesday, Wednesday, Thursday Days Breakdown -->
+                            <div class="space-y-3 pt-2">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Ketentuan Pakaian Selasa - Kamis</span>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <!-- Selasa -->
+                                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                                        <div class="flex justify-between items-center text-slate-800 font-bold border-b border-slate-200 pb-1">
+                                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-calendar-day text-brand-600"></i> Hari Selasa</span>
+                                        </div>
+                                        <p class="text-slate-700 pt-1"><span class="text-slate-400">Atasan:</span> <strong x-text="getSelectedWeekData().days.selasa.top"></strong></p>
+                                        <p class="text-slate-700"><span class="text-slate-400">Bawahan:</span> <strong x-text="getSelectedWeekData().days.selasa.bottom"></strong></p>
+                                        <p class="text-slate-700"><span class="text-slate-400">Sepatu:</span> <strong x-text="getSelectedWeekData().days.selasa.shoes"></strong></p>
+                                    </div>
+
+                                    <!-- Rabu -->
+                                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                                        <div class="flex justify-between items-center text-slate-800 font-bold border-b border-slate-200 pb-1">
+                                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-calendar-day text-indigo-600"></i> Hari Rabu</span>
+                                        </div>
+                                        <p class="text-slate-700 pt-1"><span class="text-slate-400">Atasan:</span> <strong x-text="getSelectedWeekData().days.rabu.top"></strong></p>
+                                        <p class="text-slate-700"><span class="text-slate-400">Bawahan:</span> <strong x-text="getSelectedWeekData().days.rabu.bottom"></strong></p>
+                                        <p class="text-slate-700"><span class="text-slate-400">Sepatu:</span> <strong x-text="getSelectedWeekData().days.rabu.shoes"></strong></p>
+                                    </div>
+
+                                    <!-- Kamis -->
+                                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                                        <div class="flex justify-between items-center text-slate-800 font-bold border-b border-slate-200 pb-1">
+                                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-calendar-day text-amber-600"></i> Hari Kamis</span>
+                                        </div>
+                                        <p class="text-slate-700 pt-1"><span class="text-slate-400">Atasan:</span> <strong x-text="getSelectedWeekData().days.kamis.top"></strong></p>
+                                        <p class="text-slate-700"><span class="text-slate-400">Bawahan:</span> <strong x-text="getSelectedWeekData().days.kamis.bottom"></strong></p>
+                                        <p class="text-slate-700"><span class="text-slate-400">Sepatu:</span> <strong x-text="getSelectedWeekData().days.kamis.shoes"></strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Day-by-Day Detailed Schedule -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Jadwal Harian Pakaian</h3>
+                                <p class="text-xs text-slate-500">Senin (Khusus Utama), Selasa-Kamis (Variasi Set), Jumat (Bebas)</p>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600" x-text="getSelectedWeekData().name"></span>
+                        </div>
+
+                        <!-- Days Cards List -->
+                        <div class="space-y-3">
+                            <template x-for="day in getSelectedWeekData().dailySchedule" :key="day.dayName">
+                                <div class="border rounded-xl p-4 transition-all"
+                                     :class="[
+                                         isToday(day.dayName) ? 'border-brand-500 bg-brand-50/30 ring-1 ring-brand-500/20' : 'border-slate-200 hover:border-slate-300 bg-white',
+                                         day.isMondaySpecial ? 'bg-amber-50/20 border-amber-200' : '',
+                                         day.isFreeDay ? 'bg-emerald-50/30 border-emerald-200' : ''
+                                     ]">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-2.5">
+                                            <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
+                                                  :class="day.isMondaySpecial ? 'bg-amber-500 text-white' : (day.isFreeDay ? 'bg-emerald-600 text-white' : (isToday(day.dayName) ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700'))"
+                                                  x-text="day.dayName.substring(0, 3)">
+                                            </span>
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <h4 class="font-bold text-slate-800 text-sm" x-text="day.dayName"></h4>
+                                                    <template x-if="day.isMondaySpecial">
+                                                        <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-star mr-1"></i>Set Khusus</span>
+                                                    </template>
+                                                    <template x-if="day.isFreeDay">
+                                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-check mr-1"></i>Pakaian Bebas</span>
+                                                    </template>
+                                                </div>
+                                                <p class="text-[11px] text-slate-500" x-text="day.uniformName"></p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center gap-2">
+                                            <template x-if="!day.isFreeDay">
+                                                <button @click="openImageModal(day.image || getSelectedWeekData().image, 'Foto ' + day.dayName + ' - ' + day.uniformName)" 
+                                                        class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1 text-[11px] font-medium transition" title="Lihat Foto Seragam">
+                                                    <i class="fa-solid fa-image text-brand-600"></i>
+                                                    <span class="hidden sm:inline">Foto</span>
+                                                </button>
+                                            </template>
+                                            <template x-if="isToday(day.dayName)">
+                                                <span class="text-[10px] font-bold bg-brand-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">HARI INI</span>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <template x-if="!day.isFreeDay">
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                <span class="text-[10px] text-slate-400 font-semibold block uppercase flex items-center gap-1"><i class="fa-solid fa-shirt text-[10px]"></i> 1. Atasan</span>
+                                                <span class="font-medium text-slate-800 block mt-0.5" x-text="day.top"></span>
+                                            </div>
+                                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                <span class="text-[10px] text-slate-400 font-semibold block uppercase flex items-center gap-1"><i class="fa-solid fa-socks text-[10px]"></i> 2. Bawahan</span>
+                                                <span class="font-medium text-slate-800 block mt-0.5" x-text="day.bottom"></span>
+                                            </div>
+                                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                <span class="text-[10px] text-slate-400 font-semibold block uppercase flex items-center gap-1"><i class="fa-solid fa-shoe-prints text-[10px]"></i> 3. Sepatu</span>
+                                                <span class="font-medium text-slate-800 block mt-0.5" x-text="day.shoes"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <template x-if="day.isFreeDay">
+                                        <div class="pt-2 border-t border-slate-100 text-xs text-slate-600 flex items-center gap-2 bg-emerald-50/50 p-2.5 rounded-lg">
+                                            <i class="fa-solid fa-circle-info text-emerald-600"></i>
+                                            <span>Tidak ada aturan seragam wajib untuk hari Jumat. Bebas rapi & bersopan.</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Edit / Kelola Jadwal -->
+    <div x-show="showEditModal" 
+         x-transition.opacity
+         class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto no-print"
+         style="display: none;">
+        
+        <div @click.outside="showEditModal = false" 
+             class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+            
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-400"></i>
+                    <h3 class="font-bold text-base">Kelola Jadwal & Tanggal Khusus</h3>
+                </div>
+                <button @click="showEditModal = false" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Navigation Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-50 px-6 pt-3 space-x-4 text-xs font-bold overflow-x-auto">
+                <button @click="activeModalTab = 'weekly'" 
+                        :class="activeModalTab === 'weekly' ? 'border-b-2 border-brand-600 text-brand-600 pb-2' : 'text-slate-500 hover:text-slate-800 pb-2'">
+                    <i class="fa-solid fa-calendar-week mr-1"></i> Set Mingguan (Selasa-Kamis)
+                </button>
+                <button @click="activeModalTab = 'monday'" 
+                        :class="activeModalTab === 'monday' ? 'border-b-2 border-brand-600 text-brand-600 pb-2' : 'text-slate-500 hover:text-slate-800 pb-2'">
+                    <i class="fa-solid fa-star mr-1"></i> Set Senin Khusus
+                </button>
+                <button @click="activeModalTab = 'specialDates'" 
+                        :class="activeModalTab === 'specialDates' ? 'border-b-2 border-brand-600 text-brand-600 pb-2' : 'text-slate-500 hover:text-slate-800 pb-2'">
+                    <i class="fa-solid fa-calendar-star mr-1"></i> Tanggal Khusus
+                </button>
+                <button @click="activeModalTab = 'company'" 
+                        :class="activeModalTab === 'company' ? 'border-b-2 border-brand-600 text-brand-600 pb-2' : 'text-slate-500 hover:text-slate-800 pb-2'">
+                    <i class="fa-solid fa-building mr-1"></i> Perusahaan & Logo
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                
+                <!-- TAB 1: WEEKLY SETS EDIT -->
+                <div x-show="activeModalTab === 'weekly'" class="space-y-4">
+                    <div class="flex items-center justify-between gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="text-xs font-bold text-slate-700">Pilih Minggu yang Diubah:</label>
+                        <select x-model="editingWeekId" class="bg-white border border-slate-300 text-xs rounded-lg px-3 py-1.5 font-medium focus:ring-2 focus:ring-brand-500">
+                            <template x-for="w in weeks" :key="w.id">
+                                <option :value="w.id" x-text="w.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <template x-if="getEditWeekData()">
+                        <div class="space-y-4 pt-1">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Judul Set Mingguan</label>
+                                <input type="text" x-model="getEditWeekData().title" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Deskripsi Singkat Set</label>
+                                <textarea x-model="getEditWeekData().description" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+                            </div>
+
+                            <!-- Weekly Uniform Photo Upload Section -->
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                                <label class="block text-xs font-bold text-slate-700">Foto Set Seragam Mingguan</label>
+                                <div class="flex items-center gap-4">
+                                    <img :src="getEditWeekData().image" class="w-16 h-16 object-cover rounded-lg border border-slate-300 shadow-sm flex-shrink-0" onerror="this.src='https://placehold.co/150x150/e2e8f0/475569?text=Set'">
+                                    <div class="space-y-2 flex-1">
+                                        <div class="flex gap-2">
+                                            <label class="cursor-pointer bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5 shadow-sm">
+                                                <i class="fa-solid fa-cloud-arrow-up"></i> Unggah Foto Baru
+                                                <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event, getEditWeekData())">
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Atau Gunakan URL Gambar / Path GitHub:</label>
+                                            <input type="text" x-model="getEditWeekData().image" placeholder="https://... atau images/foto.jpg" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-brand-500 outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tuesday, Wednesday, Thursday Clothes Setting -->
+                            <div class="border-t border-slate-200 pt-3 space-y-3">
+                                <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1">
+                                    <i class="fa-solid fa-shirt text-brand-600"></i> Set Seragam per Hari (Selasa - Kamis)
+                                </h4>
+
+                                <!-- Tuesday Edit -->
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-brand-600 flex items-center gap-1"><i class="fa-solid fa-calendar-day"></i> Hari Selasa</span>
+                                        <label class="cursor-pointer text-[10px] bg-brand-50 text-brand-700 hover:bg-brand-100 font-semibold px-2 py-1 rounded border border-brand-200 transition inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-upload"></i> Unggah Foto
+                                            <input type="file" accept="image/*" class="hidden" @change="handleDayImageUpload($event, getEditWeekData().days.selasa)">
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <input type="text" placeholder="1. Atasan" x-model="getEditWeekData().days.selasa.top" class="bg-white border rounded px-2 py-1 text-xs">
+                                        <input type="text" placeholder="2. Bawahan" x-model="getEditWeekData().days.selasa.bottom" class="bg-white border rounded px-2 py-1 text-xs">
+                                        <input type="text" placeholder="3. Sepatu" x-model="getEditWeekData().days.selasa.shoes" class="bg-white border rounded px-2 py-1 text-xs">
+                                    </div>
+                                </div>
+
+                                <!-- Wednesday Edit -->
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-indigo-600 flex items-center gap-1"><i class="fa-solid fa-calendar-day"></i> Hari Rabu</span>
+                                        <label class="cursor-pointer text-[10px] bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold px-2 py-1 rounded border border-indigo-200 transition inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-upload"></i> Unggah Foto
+                                            <input type="file" accept="image/*" class="hidden" @change="handleDayImageUpload($event, getEditWeekData().days.rabu)">
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <input type="text" placeholder="1. Atasan" x-model="getEditWeekData().days.rabu.top" class="bg-white border rounded px-2 py-1 text-xs">
+                                        <input type="text" placeholder="2. Bawahan" x-model="getEditWeekData().days.rabu.bottom" class="bg-white border rounded px-2 py-1 text-xs">
+                                        <input type="text" placeholder="3. Sepatu" x-model="getEditWeekData().days.rabu.shoes" class="bg-white border rounded px-2 py-1 text-xs">
+                                    </div>
+                                </div>
+
+                                <!-- Thursday Edit -->
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-amber-600 flex items-center gap-1"><i class="fa-solid fa-calendar-day"></i> Hari Kamis</span>
+                                        <label class="cursor-pointer text-[10px] bg-amber-50 text-amber-800 hover:bg-amber-100 font-semibold px-2 py-1 rounded border border-amber-200 transition inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-upload"></i> Unggah Foto
+                                            <input type="file" accept="image/*" class="hidden" @change="handleDayImageUpload($event, getEditWeekData().days.kamis)">
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <input type="text" placeholder="1. Atasan" x-model="getEditWeekData().days.kamis.top" class="bg-white border rounded px-2 py-1 text-xs">
+                                        <input type="text" placeholder="2. Bawahan" x-model="getEditWeekData().days.kamis.bottom" class="bg-white border rounded px-2 py-1 text-xs">
+                                        <input type="text" placeholder="3. Sepatu" x-model="getEditWeekData().days.kamis.shoes" class="bg-white border rounded px-2 py-1 text-xs">
+                                    </div>
+                                </div>
+
+                                <p class="text-[11px] text-slate-400 italic">* Catatan: Hari Jumat bebas bersopan.</p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- TAB 2: MONDAY SPECIAL EDIT -->
+                <div x-show="activeModalTab === 'monday'" class="space-y-4">
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                        <span class="text-xs font-bold text-amber-900 block"><i class="fa-solid fa-star text-amber-600 mr-1"></i>Set Khusus Hari Senin (Upacara / Formal Utama)</span>
+                        
+                        <div class="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-amber-200">
+                            <img :src="mondaySpecialSet.image" class="w-12 h-12 object-cover rounded-md border border-slate-200 flex-shrink-0" onerror="this.src='https://placehold.co/100x100/fef3c7/b45309?text=Senin'">
+                            <div class="flex-1 space-y-1">
+                                <label class="block text-[10px] text-slate-500 font-bold uppercase">Foto Set Senin</label>
+                                <div class="flex gap-2">
+                                    <label class="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded transition inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-upload"></i> Unggah Foto
+                                        <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event, mondaySpecialSet)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-amber-800 font-medium mb-1">1. Atasan Senin</label>
+                                <input type="text" x-model="mondaySpecialSet.top" class="w-full bg-white border border-amber-300 rounded px-2.5 py-1 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-amber-800 font-medium mb-1">2. Bawahan Senin</label>
+                                <input type="text" x-model="mondaySpecialSet.bottom" class="w-full bg-white border border-amber-300 rounded px-2.5 py-1 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-amber-800 font-medium mb-1">3. Sepatu Senin</label>
+                                <input type="text" x-model="mondaySpecialSet.shoes" class="w-full bg-white border border-amber-300 rounded px-2.5 py-1 text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: SPECIAL DATES EDIT -->
+                <div x-show="activeModalTab === 'specialDates'" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-bold text-slate-800">Daftar Tanggal Khusus (Seragam Pengecualian)</h4>
+                        <button @click="addSpecialDate()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Tambah Tanggal Khusus
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <template x-for="(sd, index) in specialDates" :key="sd.id">
+                            <div class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <input type="date" x-model="sd.date" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-bold">
+                                        <input type="text" placeholder="Nama Acara (mis: Upacara 17 Agustus)" x-model="sd.title" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs flex-1 font-semibold">
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <template x-if="sd.image">
+                                            <button @click="openImageModal(sd.image, 'Foto ' + sd.title)" 
+                                                    class="p-1.5 bg-white text-slate-700 hover:text-brand-600 border border-slate-300 rounded text-xs transition flex items-center gap-1 font-medium" 
+                                                    title="Lihat Gambar">
+                                                <i class="fa-solid fa-eye text-brand-600"></i>
+                                                <span class="hidden sm:inline">Lihat</span>
+                                            </button>
+                                        </template>
+                                        <button @click="removeSpecialDate(index)" class="text-rose-600 hover:text-rose-800 text-xs p-1.5 bg-white border border-rose-200 rounded hover:bg-rose-50 transition" title="Hapus">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Photo Upload & Preview Section -->
+                                <div class="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-amber-200">
+                                    <div class="relative w-12 h-12 rounded border border-slate-200 overflow-hidden bg-slate-100 flex-shrink-0 cursor-pointer group"
+                                         @click="sd.image && openImageModal(sd.image, sd.title)">
+                                        <img :src="sd.image || 'https://placehold.co/100x100/fef3c7/b45309?text=Event'" 
+                                             class="w-full h-full object-cover">
+                                        <template x-if="sd.image">
+                                            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[10px]">
+                                                <i class="fa-solid fa-magnifying-glass"></i>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div class="flex-1 space-y-1.5">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <label class="block text-[10px] text-slate-500 font-bold uppercase">Foto Seragam Agenda Khusus</label>
+                                            <label class="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded transition inline-flex items-center gap-1 shadow-sm">
+                                                <i class="fa-solid fa-upload"></i> Unggah Foto
+                                                <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event, sd)">
+                                            </label>
+                                        </div>
+                                        <input type="text" x-model="sd.image" placeholder="Atau tautkan URL gambar / path (https://...)" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs focus:bg-white focus:ring-1 focus:ring-amber-500 outline-none">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] text-amber-800 font-medium mb-0.5">1. Atasan</label>
+                                        <input type="text" placeholder="Atasan" x-model="sd.top" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-amber-800 font-medium mb-0.5">2. Bawahan</label>
+                                        <input type="text" placeholder="Bawahan" x-model="sd.bottom" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-amber-800 font-medium mb-0.5">3. Sepatu</label>
+                                        <input type="text" placeholder="Sepatu" x-model="sd.shoes" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs">
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- TAB 4: COMPANY INFO & LOGO EDIT -->
+                <div x-show="activeModalTab === 'company'" class="space-y-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                        <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-building text-brand-600"></i> Identitas Perusahaan / Instansi
+                        </h4>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Perusahaan / Organisasi</label>
+                            <input type="text" x-model="companyName" placeholder="Contoh: PT Sampoerna Tbk / Kantor Pusat" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-xs font-semibold text-slate-600">Logo Perusahaan</label>
+                            <div class="flex items-center gap-4 bg-white p-3 rounded-lg border border-slate-200">
+                                <template x-if="companyLogo">
+                                    <img :src="companyLogo" class="w-16 h-16 object-contain rounded border border-slate-200 bg-slate-50 p-1 flex-shrink-0">
+                                </template>
+                                <template x-if="!companyLogo">
+                                    <div class="w-16 h-16 rounded border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 text-xl flex-shrink-0">
+                                        <i class="fa-solid fa-building"></i>
+                                    </div>
+                                </template>
+                                
+                                <div class="space-y-2 flex-1">
+                                    <label class="cursor-pointer bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5 shadow-sm">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> Unggah File Logo
+                                        <input type="file" accept="image/*" class="hidden" @change="handleCompanyLogoUpload($event)">
+                                    </label>
+                                    <div>
+                                        <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Atau tautkan URL Logo:</label>
+                                        <input type="text" x-model="companyLogo" placeholder="https://domain.com/logo.png" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-brand-500 outline-none">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button @click="resetToDefault()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold transition">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Reset Ke Standar
+                </button>
+                <div class="flex items-center gap-2">
+                    <button @click="showEditModal = false" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition">
+                        Batal
+                    </button>
+                    <button @click="saveChanges()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow transition">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div x-show="showImageModal" 
+         x-transition.opacity
+         class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 no-print"
+         style="display: none;"
+         @keydown.escape.window="showImageModal = false">
+        
+        <div @click.outside="showImageModal = false" class="relative max-w-3xl w-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col max-h-[90vh]">
+            <div class="p-4 bg-slate-900/90 text-white flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-slate-200">
+                    <i class="fa-solid fa-image text-brand-400"></i>
+                    <span x-text="activeImageTitle"></span>
+                </h3>
+                <button @click="showImageModal = false" class="text-slate-400 hover:text-white transition w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-2 bg-black flex items-center justify-center overflow-auto flex-1">
+                <img :src="activeImageSrc" class="max-h-[75vh] w-auto max-w-full object-contain rounded-lg" onerror="this.src='https://placehold.co/600x400/1e293b/ffffff?text=Gambar+Tidak+Tersedia'">
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Day Detail Modal -->
+    <div x-show="showDayDetailModal" 
+         x-transition.opacity
+         class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto no-print"
+         style="display: none;">
+        
+        <div @click.outside="showDayDetailModal = false" 
+             class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden my-8 space-y-4 p-6">
+            
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded" :class="selectedCalendarDay?.uniform?.badgeClass" x-text="selectedCalendarDay?.uniform?.badge"></span>
+                    <h3 class="text-lg font-bold text-slate-900 mt-1" x-text="selectedCalendarDay?.dateFormatted"></h3>
+                </div>
+                <button @click="showDayDetailModal = false" class="text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <template x-if="selectedCalendarDay">
+                <div class="space-y-4">
+                    <!-- Photo -->
+                    <template x-if="selectedCalendarDay.uniform.image">
+                        <div class="relative h-48 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                            <img :src="selectedCalendarDay.uniform.image" class="w-full h-full object-cover">
+                        </div>
+                    </template>
+
+                    <div>
+                        <h4 class="font-bold text-base text-slate-900" x-text="selectedCalendarDay.uniform.title"></h4>
+                        <p class="text-xs text-slate-500" x-text="selectedCalendarDay.uniform.weekTitle || 'Aturan Seragam Harian'"></p>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+                        <p class="flex justify-between"><span class="text-slate-500">1. Atasan:</span> <strong class="text-slate-900" x-text="selectedCalendarDay.uniform.top"></strong></p>
+                        <p class="flex justify-between"><span class="text-slate-500">2. Bawahan:</span> <strong class="text-slate-900" x-text="selectedCalendarDay.uniform.bottom"></strong></p>
+                        <p class="flex justify-between"><span class="text-slate-500">3. Sepatu:</span> <strong class="text-slate-900" x-text="selectedCalendarDay.uniform.shoes"></strong></p>
+                    </div>
+                </div>
+            </template>
+
+            <div class="pt-2">
+                <button @click="showDayDetailModal = false" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" 
+         x-transition
+         class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-xl border border-slate-800 flex items-center gap-2"
+         style="display: none;">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span x-text="toast.message"></span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 no-print mt-auto">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 Management Seragam Kerja & Sekolah • Hak Cipta Dilindungi</p>
+        </div>
+    </footer>
+
+</body>
+</html>
