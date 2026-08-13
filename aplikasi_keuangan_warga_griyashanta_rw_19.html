@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Keuangan Warga Griyashanta RW 19 Malang</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            950: '#052e16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+        }
+        .print-only { display: none; }
+        /* Custom scrollbars for matrix table */
+        .custom-scroll::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+    <div id="app" class="flex flex-col min-h-screen">
+
+        <!-- HEADER & NAVBAR -->
+        <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-slate-900 text-white shadow-lg sticky top-0 z-30 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16 flex-wrap py-2 sm:py-0 gap-2">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-emerald-500 text-white p-2 rounded-xl shadow-md">
+                            <i class="fa-solid font-bold fa-city text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-lg leading-tight">RW 19 Griyashanta Malang</h1>
+                            <p class="text-xs text-emerald-200">Sistem Keuangan & Iuran Perumahan</p>
+                        </div>
+                    </div>
+
+                    <!-- Mode Toggle, Year Selector & Sync Button -->
+                    <div class="flex flex-wrap items-center gap-2">
+
+                        <!-- Mode Switcher (Edit vs Preview) -->
+                        <button @click="togglePreviewMode" 
+                                :class="isPreviewOnly ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600'" 
+                                class="border px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition shadow-sm">
+                            <i :class="isPreviewOnly ? 'fa-solid fa-eye' : 'fa-solid fa-pen-to-square'"></i>
+                            <span>{{ isPreviewOnly ? 'Mode Preview (Lihat Saja)' : 'Mode Edit (Admin)' }}</span>
+                        </button>
+
+                        <button @click="showPengurusModal = true" class="bg-indigo-800/90 hover:bg-indigo-700 border border-indigo-600 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center space-x-2 transition shadow-sm">
+                            <i class="fa-solid fa-user-shield text-indigo-300"></i>
+                            <span class="hidden sm:inline">Pengurus RW & RT</span>
+                        </button>
+
+                        <div class="bg-brand-800/80 border border-brand-700 px-3 py-1 rounded-lg text-sm flex items-center space-x-2">
+                            <i class="fa-regular fa-calendar text-emerald-300"></i>
+                            <span class="text-xs text-gray-300 hidden sm:inline">Thn:</span>
+                            <select v-model="selectedYear" class="bg-transparent font-semibold focus:outline-none text-white cursor-pointer">
+                                <option v-for="y in [2024, 2025, 2026, 2027]" :key="y" :value="y" class="text-slate-800">{{ y }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Google Sheet Sync Status Button -->
+                        <button @click="showGoogleSheetModal = true" class="bg-emerald-800/90 hover:bg-emerald-700 border border-emerald-600 px-3 py-1.5 rounded-lg text-xs font-medium text-white flex items-center space-x-2 transition shadow-sm">
+                            <i class="fa-solid fa-file-excel text-emerald-300"></i>
+                            <span class="hidden sm:inline">Google Sheets</span>
+                            <span :class="googleSheetUrl ? 'bg-emerald-400' : 'bg-amber-400'" class="w-2.5 h-2.5 rounded-full inline-block animate-pulse"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB NAVIGATION MENU -->
+            <div class="bg-brand-950/40 border-t border-emerald-800/40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-4 overflow-x-auto py-2">
+                    <button @click="switchTab('dashboard')" :class="tabClass('dashboard')">
+                        <i class="fa-solid fa-chart-pie mr-2"></i>Dashboard
+                    </button>
+                    <button @click="switchTab('pengumuman')" :class="tabClass('pengumuman')">
+                        <i class="fa-solid fa-bullhorn mr-2"></i>Pengumuman
+                        <span v-if="pengumumanList.length" class="ml-1.5 bg-amber-500 text-amber-950 font-bold text-[10px] px-1.5 py-0.5 rounded-full">{{ pengumumanList.length }}</span>
+                    </button>
+                    <button @click="switchTab('warga')" :class="tabClass('warga')">
+                        <i class="fa-solid fa-users mr-2"></i>Data Warga
+                        <span class="ml-2 bg-emerald-700/60 text-emerald-100 text-xs px-2 py-0.5 rounded-full">{{ wargaList.length }}</span>
+                    </button>
+                    <button @click="switchTab('matrix')" :class="tabClass('matrix')">
+                        <i class="fa-solid fa-table-cells mr-2"></i>Matrix Iuran
+                    </button>
+                    <button @click="switchTab('kas')" :class="tabClass('kas')">
+                        <i class="fa-solid fa-wallet mr-2"></i>Buku Kas RW
+                    </button>
+                    <button @click="switchTab('laporan')" :class="tabClass('laporan')">
+                        <i class="fa-solid fa-file-invoice-dollar mr-2"></i>Laporan & Kwitansi
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- BANNER MODE READ-ONLY (PREVIEW) -->
+        <div v-if="isPreviewOnly" class="bg-amber-500 text-amber-950 px-4 py-2 text-xs font-semibold text-center flex items-center justify-center space-x-2 border-b border-amber-600 no-print shadow-inner">
+            <i class="fa-solid fa-lock text-sm"></i>
+            <span>Anda berada dalam <strong>Mode Preview (Lihat Saja)</strong>. Fitur penambahan, pengubahan, dan penghapusan data dikunci.</span>
+        </div>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 no-print">
+
+            <!-- TAB 1: DASHBOARD VIEW -->
+            <div v-if="currentTab === 'dashboard'" class="space-y-6">
+                <!-- Papan Pengumuman Banner Widget on Dashboard -->
+                <div class="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-white border border-amber-200 p-5 rounded-2xl shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="p-2 bg-amber-500 text-white rounded-xl shadow-xs"><i class="fa-solid fa-bullhorn text-sm"></i></span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">Papan Pengumuman & Informasi RW 19</h4>
+                                <p class="text-[11px] text-slate-500">Pengumuman penting dan jadwal kegiatan perumahan</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button @click="switchTab('pengumuman')" class="text-xs font-semibold text-amber-700 hover:text-amber-800 bg-amber-100/80 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition flex items-center space-x-1">
+                                <span>Lihat Semua</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                            <button @click="openAddPengumumanModal" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-200 text-slate-400' : 'bg-amber-600 hover:bg-amber-700 text-white'" class="text-xs font-semibold px-3 py-1.5 rounded-xl transition shadow-xs flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                                <span>+ Buat Pengumuman</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div v-for="p in pinnedPengumuman" :key="p.id" class="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-xs hover:border-amber-400 transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span :class="getKategoriPengumumanBadgeClass(p.kategori)" class="px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                        {{ p.kategori }}
+                                    </span>
+                                    <span class="text-[10px] text-slate-400 font-medium"><i class="fa-regular fa-clock mr-1"></i>{{ p.tanggal }}</span>
+                                </div>
+                                <h5 class="font-bold text-slate-800 text-xs line-clamp-1 mb-1">{{ p.judul }}</h5>
+                                <p class="text-slate-600 text-[11px] line-clamp-2 leading-relaxed">{{ p.isi }}</p>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                                <span class="text-slate-500 font-medium"><i class="fa-solid fa-user-pen mr-1"></i>{{ p.pembuat }}</span>
+                                <button @click="editPengumuman(p)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'text-slate-300 cursor-not-allowed' : 'text-amber-700 hover:underline font-semibold'">
+                                    <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
+                                </button>
+                            </div>
+                        </div>
+                        <div v-if="pinnedPengumuman.length === 0" class="col-span-full text-center py-4 text-xs text-slate-400">
+                            Belum ada pengumuman yang disematkan di Dashboard.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Rumah Terdaftar</p>
+                            <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ wargaList.length }} <span class="text-xs font-normal text-slate-500">Unit</span></h3>
+                            <p class="text-xs text-emerald-600 mt-1"><i class="fa-solid fa-house-user mr-1"></i>{{ countActiveWarga }} Dihuni / Ditempati</p>
+                        </div>
+                        <div class="bg-blue-50 text-blue-600 p-3.5 rounded-2xl text-2xl">
+                            <i class="fa-solid fa-house-chimney"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Iuran Bulan Ini ({{ currentMonthName }})</p>
+                            <h3 class="text-2xl font-bold text-emerald-600 mt-1">Rp {{ formatRupiah(totalIuranBulanIni) }}</h3>
+                            <p class="text-xs text-slate-500 mt-1">Target: Rp {{ formatRupiah(targetIuranBulanan) }}</p>
+                        </div>
+                        <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-2xl text-2xl">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Tunggakan Bulan Ini</p>
+                            <h3 class="text-2xl font-bold text-rose-600 mt-1">{{ totalBelumBayarBulanIni }} <span class="text-xs font-normal text-slate-500">Warga</span></h3>
+                            <p class="text-xs text-rose-500 mt-1">Estimasi: Rp {{ formatRupiah(totalBelumBayarNominal) }}</p>
+                        </div>
+                        <div class="bg-rose-50 text-rose-600 p-3.5 rounded-2xl text-2xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Saldo Kas Kas RW</p>
+                            <h3 class="text-2xl font-bold text-indigo-600 mt-1">Rp {{ formatRupiah(totalSaldoKas) }}</h3>
+                            <p class="text-xs text-slate-500 mt-1">Akumulasi Seluruh Kas</p>
+                        </div>
+                        <div class="bg-indigo-50 text-indigo-600 p-3.5 rounded-2xl text-2xl">
+                            <i class="fa-solid fa-vault"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar & Integration Banner -->
+                <div class="bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-5 rounded-2xl shadow flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-emerald-600/40 p-3 rounded-2xl text-emerald-300">
+                            <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-base">Database Google Sheets RW 19</h4>
+                            <p class="text-xs text-slate-300" v-if="lastSyncTime">Terakhir sinkronisasi: {{ lastSyncTime }}</p>
+                            <p class="text-xs text-slate-300" v-else>Sambungkan Google Sheets Web App URL untuk sinkronisasi otomatis.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button @click="syncDataFromSheet" :disabled="isSyncing" class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                            <i class="fa-solid fa-cloud-arrow-down" :class="{'fa-spin': isSyncing}"></i>
+                            <span>Tarik Data Sheet</span>
+                        </button>
+                        <button @click="saveDataToSheet" :disabled="isSyncing || isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed bg-slate-700' : 'bg-emerald-600 hover:bg-emerald-500'" class="text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                            <i class="fa-solid fa-cloud-arrow-up" :class="{'fa-spin': isSyncing}"></i>
+                            <span>Simpan ke Sheet</span>
+                        </button>
+                        <button @click="generateMockWarga(200)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed border-slate-700 text-slate-500' : 'hover:bg-slate-700 text-emerald-300 border-slate-700'" class="bg-slate-800 border font-medium text-xs px-3.5 py-2.5 rounded-xl transition">
+                            + Sample 200 Warga
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visual Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
+                        <h4 class="font-bold text-slate-800 text-sm mb-4 flex items-center justify-between">
+                            <span><i class="fa-solid fa-chart-column text-emerald-600 mr-2"></i>Pemasukan Iuran Bulanan {{ selectedYear }}</span>
+                            <span class="text-xs font-normal text-slate-500">(Januari - Desember)</span>
+                        </h4>
+                        <div class="h-64 relative">
+                            <canvas id="monthlyPaymentChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-slate-800 text-sm mb-4">
+                            <i class="fa-solid fa-chart-pie text-emerald-600 mr-2"></i>Komposisi Status Huni
+                        </h4>
+                        <div class="h-64 relative flex items-center justify-center">
+                            <canvas id="occupancyPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: DATA WARGA -->
+            <div v-if="currentTab === 'warga'" class="space-y-4">
+                <!-- Filters and Controls Bar -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-3 flex-1">
+                        <!-- Search Box -->
+                        <div class="relative flex-1 min-w-[200px]">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                            <input v-model="searchQuery" type="text" placeholder="Cari Nama / Blok..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none">
+                        </div>
+
+                        <!-- Filter RT -->
+                        <select v-model="filterRt" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="ALL">Semua RT</option>
+                            <option v-for="rt in ['01', '02', '03', '04', '05']" :key="rt" :value="rt">RT {{ rt }}</option>
+                        </select>
+
+                        <!-- Filter Status Huni -->
+                        <select v-model="filterStatusHuni" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="ALL">Semua Status Huni</option>
+                            <option value="Pribadi">Pribadi</option>
+                            <option value="Kontrak">Kontrak</option>
+                            <option value="Kost">Kost</option>
+                            <option value="Usaha">Usaha</option>
+                            <option value="Kosong">Kosong</option>
+                        </select>
+
+                        <!-- Filter Blok -->
+                        <select v-model="filterBlok" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="ALL">Semua Blok</option>
+                            <option v-for="b in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']" :key="b" :value="b">Blok {{ b }}</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button @click="openAddWargaModal" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-emerald-600 hover:bg-emerald-700'" class="text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Tambah Warga</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Warga Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold uppercase tracking-wider">
+                                    <th class="p-3 text-center">RT</th>
+                                    <th class="p-3 text-center">Blok</th>
+                                    <th class="p-3">Nama Pemilik</th>
+                                    <th class="p-3">Penghuni / Penyewa</th>
+                                    <th class="p-3 text-center">Status Huni</th>
+                                    <th class="p-3 text-right">Tarif Kebersihan</th>
+                                    <th class="p-3 text-right">Tarif Keamanan</th>
+                                    <th class="p-3 text-right">Total / Bln</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="w in paginatedWarga" :key="w.id" class="hover:bg-slate-50 transition">
+                                    <td class="p-3 text-center font-bold text-slate-600 bg-slate-50/30">RT {{ w.rt || '01' }}</td>
+                                    <td class="p-3 font-bold text-slate-800 text-center bg-slate-50/50">{{ w.blok }}</td>
+                                    <td class="p-3 font-medium text-slate-900">{{ w.namaPemilik }}</td>
+                                    <td class="p-3 text-slate-600">{{ w.namaPenghuni || '-' }}</td>
+                                    <td class="p-3 text-center">
+                                        <span :class="getStatusBadgeClass(w.statusHuni)" class="px-2.5 py-1 rounded-full text-[10px] font-semibold">
+                                            {{ w.statusHuni }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-right font-mono">Rp {{ formatRupiah(w.tarifKebersihan) }}</td>
+                                    <td class="p-3 text-right font-mono">Rp {{ formatRupiah(w.tarifKeamanan) }}</td>
+                                    <td class="p-3 text-right font-bold font-mono text-emerald-700">Rp {{ formatRupiah(w.tarifKebersihan + w.tarifKeamanan) }}</td>
+                                    <td class="p-3 text-center space-x-1">
+                                        <button @click="editWarga(w)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'" title="Edit Data" class="p-1.5 rounded-lg transition">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <button @click="deleteWargaWithConfirm(w)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'" title="Hapus Warga" class="p-1.5 rounded-lg transition">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                        <button @click="viewDetailWarga(w)" title="Cetak Kwitansi" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition">
+                                            <i class="fa-solid fa-receipt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="paginatedWarga.length === 0">
+                                    <td colspan="9" class="p-8 text-center text-slate-400">
+                                        <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                                        <p>Tidak ada data warga yang cocok dengan kriteria filter.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Bar -->
+                    <div class="bg-slate-50 px-4 py-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs gap-2">
+                        <span class="text-slate-500">Menampilkan {{ paginatedWarga.length }} dari {{ filteredWarga.length }} warga</span>
+                        <div class="flex items-center space-x-1">
+                            <button @click="currentPage--" :disabled="currentPage === 1" class="px-2.5 py-1 border rounded-lg hover:bg-white disabled:opacity-40 transition">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <span class="px-3 py-1 font-semibold text-slate-700">Hal {{ currentPage }} / {{ totalPages || 1 }}</span>
+                            <button @click="currentPage++" :disabled="currentPage >= totalPages" class="px-2.5 py-1 border rounded-lg hover:bg-white disabled:opacity-40 transition">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: MATRIX IURAN -->
+            <div v-if="currentTab === 'matrix'" class="space-y-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-table-cells text-emerald-600 mr-2"></i>Matrix Iuran Tahun {{ selectedYear }}</span>
+                        <!-- Filter RT Matrix -->
+                        <select v-model="filterRt" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ALL">Semua RT</option>
+                            <option v-for="rt in ['01', '02', '03', '04', '05']" :key="rt" :value="rt">RT {{ rt }}</option>
+                        </select>
+                        <!-- Filter Blok Matrix -->
+                        <select v-model="filterBlok" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ALL">Semua Blok</option>
+                            <option v-for="b in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']" :key="b" :value="b">Blok {{ b }}</option>
+                        </select>
+                        <input v-model="searchQuery" type="text" placeholder="Cari Nama / Blok..." class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="flex items-center"><span class="w-3 h-3 bg-emerald-500 rounded-md inline-block mr-1"></span> Lunas</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-rose-200 border border-rose-400 rounded-md inline-block mr-1"></span> Belum Bayar</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-slate-200 rounded-md inline-block mr-1"></span> Kosong</span>
+                    </div>
+                </div>
+
+                <!-- Matrix Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto custom-scroll max-h-[600px]">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="sticky top-0 bg-slate-800 text-white z-10">
+                                <tr>
+                                    <th class="p-3 w-16 text-center border-r border-slate-700">Blok</th>
+                                    <th class="p-3 w-48 border-r border-slate-700">Nama Pemilik</th>
+                                    <th v-for="(m, idx) in monthNames" :key="idx" class="p-2 text-center border-r border-slate-700 font-semibold min-w-[70px]">
+                                        {{ m.substring(0, 3) }}
+                                    </th>
+                                    <th class="p-3 text-center min-w-[90px]">Aksi Fast</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                <tr v-for="w in filteredWarga" :key="w.id" class="hover:bg-slate-50 transition">
+                                    <td class="p-2 font-bold text-center bg-slate-50 border-r border-slate-200 text-slate-800">
+                                        {{ w.blok }}
+                                        <div class="text-[9px] text-emerald-700 font-semibold">RT {{ w.rt || '01' }}</div>
+                                    </td>
+                                    <td class="p-2 border-r border-slate-200 font-medium text-slate-800 truncate max-w-[180px]" :title="w.namaPemilik">
+                                        {{ w.namaPemilik }}
+                                        <div class="text-[10px] text-slate-400 font-normal truncate" v-if="w.namaPenghuni">({{ w.namaPenghuni }})</div>
+                                    </td>
+                                    
+                                    <!-- Monthly payment buttons -->
+                                    <td v-for="(m, monthIdx) in monthNames" :key="monthIdx" class="p-1 text-center border-r border-slate-100">
+                                        <button @click="togglePaymentStatus(w.id, monthIdx)"
+                                                :disabled="w.statusHuni === 'Kosong' || isPreviewOnly"
+                                                :class="getMatrixButtonClass(w.id, monthIdx, w.statusHuni)"
+                                                class="w-full py-1.5 rounded-lg text-[10px] font-bold transition flex items-center justify-center disabled:cursor-not-allowed">
+                                            <span v-if="w.statusHuni === 'Kosong'">-</span>
+                                            <span v-else-if="isPaid(w.id, monthIdx)"><i class="fa-solid fa-check"></i></span>
+                                            <span v-else>Rp</span>
+                                        </button>
+                                    </td>
+
+                                    <td class="p-1 text-center">
+                                        <button @click="payFullYear(w.id)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'" title="Tandai Bayar 1 Tahun Full" class="px-2 py-1 font-bold rounded-lg text-[10px] border transition">
+                                            1 Thn Full
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: BUKU KAS RW -->
+            <div v-if="currentTab === 'kas'" class="space-y-4">
+                <!-- Kas Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <p class="text-xs font-semibold text-slate-500">Total Pemasukan Non-Iuran</p>
+                        <h4 class="text-xl font-bold text-emerald-600 mt-1">Rp {{ formatRupiah(totalPemasukanKas) }}</h4>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <p class="text-xs font-semibold text-slate-500">Total Pengeluaran Kas</p>
+                        <h4 class="text-xl font-bold text-rose-600 mt-1">Rp {{ formatRupiah(totalPengeluaranKas) }}</h4>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <p class="text-xs font-semibold text-slate-500">Saldo Akhir Kas RW</p>
+                        <h4 class="text-xl font-bold text-indigo-600 mt-1">Rp {{ formatRupiah(totalSaldoKas) }}</h4>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <h4 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-book text-emerald-600 mr-2"></i>Riwayat Transaksi Kas RW</h4>
+                    <button @click="openAddKasModal" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'" class="text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tambah Transaksi Kas</span>
+                    </button>
+                </div>
+
+                <!-- Kas Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold uppercase">
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3 text-center">Tipe</th>
+                                    <th class="p-3">Kategori</th>
+                                    <th class="p-3">Keterangan</th>
+                                    <th class="p-3 text-right">Nominal</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="k in kasList" :key="k.id" class="hover:bg-slate-50 transition">
+                                    <td class="p-3 font-mono text-slate-600">{{ k.tanggal }}</td>
+                                    <td class="p-3 text-center">
+                                        <span :class="k.type === 'MASUK' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'" class="px-2.5 py-1 rounded-full text-[10px] font-bold border">
+                                            {{ k.type }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 font-semibold text-slate-800">{{ k.kategori }}</td>
+                                    <td class="p-3 text-slate-600">{{ k.keterangan || '-' }}</td>
+                                    <td :class="k.type === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'" class="p-3 text-right font-bold font-mono">
+                                        {{ k.type === 'MASUK' ? '+' : '-' }} Rp {{ formatRupiah(k.nominal) }}
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <button @click="deleteKasWithConfirm(k.id)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'" class="p-1.5 rounded-lg transition">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="kasList.length === 0">
+                                    <td colspan="6" class="p-8 text-center text-slate-400">
+                                        Belum ada pencatatan transaksi kas RW.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: LAPORAN & CETAK KWITANSI -->
+            <div v-if="currentTab === 'laporan'" class="space-y-6">
+                <!-- ... existing content ... -->
+            </div>
+
+            <!-- TAB 6: PENGUMUMAN RW -->
+            <div v-if="currentTab === 'pengumuman'" class="space-y-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-3 flex-1">
+                        <div class="relative flex-1 min-w-[200px]">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                            <input v-model="searchPengumumanQuery" type="text" placeholder="Cari Judul / Isi Pengumuman..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none">
+                        </div>
+                        <select v-model="filterPengumumanKategori" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 outline-none">
+                            <option value="ALL">Semua Kategori</option>
+                            <option value="Informasi">Informasi Umum</option>
+                            <option value="Kegiatan">Kegiatan & Kerja Bakti</option>
+                            <option value="Keuangan">Iuran & Keuangan</option>
+                            <option value="Rapat">Rapat Warga</option>
+                            <option value="Darurat">Darurat & Keamanan</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <button @click="openAddPengumumanModal" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-amber-600 hover:bg-amber-700'" class="text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Tambah Pengumuman Baru</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pengumuman Cards List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="p in filteredPengumumanList" :key="p.id" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-3 relative hover:shadow-md transition">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center space-x-2">
+                                <span :class="getKategoriPengumumanBadgeClass(p.kategori)" class="px-2.5 py-1 rounded-lg text-xs font-bold">
+                                    {{ p.kategori }}
+                                </span>
+                                <span v-if="p.isPinned" class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-300">
+                                    <i class="fa-solid fa-thumbtack mr-1 text-amber-600"></i>Disematkan
+                                </span>
+                            </div>
+                            <span class="text-xs text-slate-400 font-mono"><i class="fa-regular fa-calendar-check mr-1"></i>{{ p.tanggal }}</span>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base leading-snug">{{ p.judul }}</h3>
+                            <p class="text-slate-600 text-xs mt-2 whitespace-pre-line leading-relaxed">{{ p.isi }}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span class="text-slate-500 font-medium">
+                                <i class="fa-solid fa-user-shield text-indigo-500 mr-1.5"></i>{{ p.pembuat }}
+                            </span>
+                            <div class="flex items-center space-x-1">
+                                <button @click="togglePinPengumuman(p)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed text-slate-300' : (p.isPinned ? 'text-amber-600 hover:text-amber-800 bg-amber-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100')" class="p-1.5 rounded-lg transition" :title="p.isPinned ? 'Lepas Sematan' : 'Sematkan di Dashboard'">
+                                    <i class="fa-solid fa-thumbtack"></i>
+                                </button>
+                                <button @click="editPengumuman(p)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'" title="Edit Pengumuman" class="p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button @click="deletePengumumanWithConfirm(p)" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'" title="Hapus Pengumuman" class="p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="filteredPengumumanList.length === 0" class="col-span-full bg-white p-12 text-center rounded-2xl border border-slate-200 text-slate-400 space-y-2">
+                        <i class="fa-solid fa-bullhorn text-4xl mb-2 text-slate-300"></i>
+                        <p class="font-semibold text-sm">Tidak ada pengumuman yang sesuai kriteria pencarian.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- PRINTABLE ONLY TEMPLATE (For print output) -->
+        <div class="print-only p-8 text-black" v-if="activeKwitansi">
+            <h2 class="font-bold text-xl uppercase">PERUMAHAN GRIYASHANTA RW 19 MALANG</h2>
+            <p class="text-xs border-b pb-2 mb-4">Bukti Pembayaran Iuran Kebersihan & Keamanan Bulan {{ monthNames[activeKwitansi.monthIndex] }} {{ selectedYear }}</p>
+            <p><strong>Nama Pemilik:</strong> {{ activeKwitansi.warga.namaPemilik }}</p>
+            <p><strong>Alamat:</strong> Blok {{ activeKwitansi.warga.blok }} (RT {{ activeKwitansi.warga.rt || '01' }} / RW 19)</p>
+            <p><strong>Total Bayar:</strong> Rp {{ formatRupiah(activeKwitansi.warga.tarifKebersihan + activeKwitansi.warga.tarifKeamanan) }}</p>
+            <p><strong>Status:</strong> {{ isPaid(activeKwitansi.warga.id, activeKwitansi.monthIndex) ? 'LUNAS' : 'BELUM LUNAS' }}</p>
+            <div class="mt-8 flex justify-between text-center text-xs">
+                <div>
+                    <p>Ketua RT {{ activeKwitansi.warga.rt || '01' }}</p>
+                    <br><br>
+                    <p>({{ getPengurusRt(activeKwitansi.warga.rt).ketuaRt }})</p>
+                </div>
+                <div>
+                    <p>Bendahara RT {{ activeKwitansi.warga.rt || '01' }}</p>
+                    <br><br>
+                    <p>({{ getPengurusRt(activeKwitansi.warga.rt).bendaharaRt }})</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 0: PENGURUS RW & RT -->
+        <div v-if="showPengurusModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-indigo-900 text-white px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-user-tie text-indigo-300 text-lg"></i>
+                        <h3 class="font-bold text-sm">Kelola Data Pengurus RW 19 & Pengurus RT</h3>
+                    </div>
+                    <button @click="showPengurusModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+
+                <div class="p-5 space-y-5 text-xs overflow-y-auto flex-1">
+                    <!-- Pengurus RW Section -->
+                    <div class="bg-indigo-50/60 border border-indigo-100 p-4 rounded-xl space-y-3">
+                        <h4 class="font-bold text-indigo-900 text-xs flex items-center">
+                            <i class="fa-solid fa-landmark text-indigo-600 mr-2"></i>Pengurus Tingkat RW 19
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Ketua RW 19</label>
+                                <input v-model="pengurusInfo.ketuaRw" :disabled="isPreviewOnly" type="text" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Sekretaris RW 19</label>
+                                <input v-model="pengurusInfo.sekretarisRw" :disabled="isPreviewOnly" type="text" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pengurus RT Section -->
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-xs mb-3 flex items-center">
+                            <i class="fa-solid fa-users-gear text-emerald-600 mr-2"></i>Pengurus RT (Ketua & Bendahara RT)
+                        </h4>
+                        <div class="space-y-3">
+                            <div v-for="(rtItem, idx) in pengurusInfo.rtList" :key="idx" class="p-3 border border-slate-200 rounded-xl bg-slate-50 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                                <div class="font-bold text-slate-800 flex items-center">
+                                    <span class="w-7 h-7 bg-emerald-600 text-white rounded-lg flex items-center justify-center text-xs mr-2">RT</span>
+                                    <span>RT {{ rtItem.rt }}</span>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Ketua RT {{ rtItem.rt }}</label>
+                                    <input v-model="rtItem.ketuaRt" :disabled="isPreviewOnly" type="text" class="w-full p-2 bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-100">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Bendahara RT {{ rtItem.rt }}</label>
+                                    <input v-model="rtItem.bendaharaRt" :disabled="isPreviewOnly" type="text" class="w-full p-2 bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                    <button @click="showPengurusModal = false" class="px-4 py-2 border rounded-xl font-semibold text-slate-600 hover:bg-slate-100 text-xs">Tutup</button>
+                    <button @click="savePengurus" :disabled="isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'" class="px-4 py-2 text-white rounded-xl font-semibold text-xs shadow">Simpan Pengurus</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 1: GOOGLE SHEETS INTEGRATION -->
+        <div v-if="showGoogleSheetModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-slate-800 text-white px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-file-excel text-emerald-400 text-lg"></i>
+                        <h3 class="font-bold text-sm">Pengaturan Google Sheets (Penyimpanan Data Terpusat)</h3>
+                    </div>
+                    <button @click="showGoogleSheetModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                
+                <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                        <p class="font-semibold text-emerald-900 mb-1"><i class="fa-solid fa-circle-info mr-1"></i>Cara Menyambungkan ke Google Sheets:</p>
+                        <ol class="list-decimal list-inside space-y-1 text-emerald-800 text-[11px]">
+                            <li>Buat spreadsheet baru di Google Sheets.</li>
+                            <li>Klik menu <strong>Extensions (Ekstensi) &gt; Apps Script</strong>.</li>
+                            <li>Salin kode di bawah ini, lalu tempel di editor Google Apps Script.</li>
+                            <li>Klik <strong>Deploy &gt; New deployment</strong>, pilih jenis <strong>Web App</strong>.</li>
+                            <li>Atur <em>Execute as: Me</em> dan <em>Who has access: Anyone</em>. Lalu Deploy.</li>
+                            <li>Salin <strong>Web App URL</strong> yang dihasilkan dan tempelkan pada kolom di bawah ini.</li>
+                        </ol>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Google Apps Script Web App URL *</label>
+                        <input v-model="googleSheetUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec" class="w-full p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-[11px]">
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="font-semibold text-slate-700">Kode Apps Script (Copy & Paste ke Google Sheet)</label>
+                            <button @click="copyAppsScriptCode" class="text-emerald-700 hover:text-emerald-900 font-semibold text-[11px] flex items-center space-x-1">
+                                <i class="fa-solid fa-copy"></i>
+                                <span>Salin Kode Script</span>
+                            </button>
+                        </div>
+                        <pre class="bg-slate-900 text-slate-200 p-3 rounded-xl overflow-x-auto text-[10px] font-mono leading-relaxed h-44">{{ appsScriptCode }}</pre>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 px-5 py-3 flex justify-between items-center border-t border-slate-200">
+                    <span v-if="syncStatusMessage" class="text-[11px] font-medium text-slate-600">{{ syncStatusMessage }}</span>
+                    <span v-else></span>
+                    <div class="flex space-x-2">
+                        <button @click="showGoogleSheetModal = false" class="px-4 py-2 border rounded-xl font-semibold text-slate-600 hover:bg-slate-100 text-xs">Tutup</button>
+                        <button @click="syncDataFromSheet" :disabled="!googleSheetUrl || isSyncing" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-semibold text-xs shadow">Tarik Data Sheet</button>
+                        <button @click="saveDataToSheet" :disabled="!googleSheetUrl || isSyncing || isPreviewOnly" :class="isPreviewOnly ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-emerald-600 hover:bg-emerald-700'" class="px-4 py-2 disabled:opacity-50 text-white rounded-xl font-semibold text-xs shadow">Simpan Ke Sheet</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 2: ADD / EDIT WARGA -->
+        <div v-if="showWargaModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                <div class="bg-slate-800 text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-bold text-sm">{{ isEditingWarga ? 'Edit Data Warga' : 'Tambah Warga Baru' }}</h3>
+                    <button @click="showWargaModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="p-5 space-y-3 text-xs">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Posisi RT *</label>
+                            <select v-model="wargaForm.rt" class="w-full p-2.5 border rounded-xl outline-none bg-white focus:ring-2 focus:ring-emerald-500">
+                                <option v-for="rt in ['01', '02', '03', '04', '05']" :key="rt" :value="rt">RT {{ rt }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Blok & No. *</label>
+                            <input v-model="wargaForm.blok" type="text" placeholder="A-12" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Status Huni *</label>
+                            <select v-model="wargaForm.statusHuni" @change="onStatusHuniChange" class="w-full p-2.5 border rounded-xl outline-none bg-white focus:ring-2 focus:ring-emerald-500">
+                                <option value="Pribadi">Pribadi</option>
+                                <option value="Kontrak">Kontrak</option>
+                                <option value="Kosong">Kosong</option>
+                                <option value="Kost">Kost</option>
+                                <option value="Usaha">Usaha</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Nama Pemilik *</label>
+                        <input v-model="wargaForm.namaPemilik" type="text" placeholder="Nama pemilik rumah..." class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Nama Penghuni (Bila dikontrakkan/kost)</label>
+                        <input v-model="wargaForm.namaPenghuni" type="text" placeholder="Kosongkan jika dihuni pemilik..." class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tarif Kebersihan (Rp)</label>
+                            <input v-model.number="wargaForm.tarifKebersihan" type="number" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tarif Keamanan (Rp)</label>
+                            <input v-model.number="wargaForm.tarifKeamanan" type="number" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                    <button @click="showWargaModal = false" class="px-4 py-2 border rounded-xl font-semibold text-slate-600 hover:bg-slate-100 text-xs">Batal</button>
+                    <button @click="saveWarga" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-xs shadow">Simpan Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 3: ADD KAS -->
+        <div v-if="showKasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+            <!-- ... existing kas modal code ... -->
+        </div>
+
+        <!-- MODAL 5: ADD / EDIT PENGUMUMAN -->
+        <div v-if="showPengumumanModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-amber-600 text-white px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-bullhorn text-amber-200 text-lg"></i>
+                        <h3 class="font-bold text-sm">{{ isEditingPengumuman ? 'Edit Pengumuman' : 'Buat Pengumuman Baru' }}</h3>
+                    </div>
+                    <button @click="showPengumumanModal = false" class="text-amber-200 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Judul Pengumuman *</label>
+                        <input v-model="pengumumanForm.judul" type="text" placeholder="misal: Kerja Bakti Masal Kebersihan Saluran Air..." class="w-full p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Kategori Pengumuman</label>
+                            <select v-model="pengumumanForm.kategori" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="Informasi">Informasi Umum</option>
+                                <option value="Kegiatan">Kegiatan & Kerja Bakti</option>
+                                <option value="Keuangan">Iuran & Keuangan</option>
+                                <option value="Rapat">Rapat Warga</option>
+                                <option value="Darurat">Darurat & Keamanan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tanggal Pengumuman</label>
+                            <input v-model="pengumumanForm.tanggal" type="date" class="w-full p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Pembuat / Penanggung Jawab</label>
+                        <input v-model="pengumumanForm.pembuat" type="text" placeholder="misal: Pengurus RW 19 / Ketua RT 02" class="w-full p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Isi Pengumuman / Pesan *</label>
+                        <textarea v-model="pengumumanForm.isi" rows="4" placeholder="Tuliskan rincian pengumuman untuk seluruh warga..." class="w-full p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"></textarea>
+                    </div>
+
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-amber-900 text-xs">Sematkan di Dashboard</p>
+                            <p class="text-[10px] text-amber-700">Pengumuman disematkan akan muncul langsung di halaman Dashboard utama.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="pengumumanForm.isPinned" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                    <button @click="showPengumumanModal = false" class="px-4 py-2 border rounded-xl font-semibold text-slate-600 text-xs hover:bg-slate-100">Batal</button>
+                    <button @click="savePengumuman" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-semibold text-xs shadow">Simpan Pengumuman</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 4: CONFIRMATION DIALOG -->
+        <div v-if="confirmModal.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-5 text-center space-y-4">
+                <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm">{{ confirmModal.title }}</h4>
+                    <p class="text-xs text-slate-500 mt-1">{{ confirmModal.message }}</p>
+                </div>
+                <div class="flex space-x-2 justify-center">
+                    <button @click="confirmModal.show = false" class="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button @click="executeConfirmAction" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow">Ya, Lanjutkan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST NOTIFICATION MESSAGE BOX -->
+        <div v-if="toast.show" class="fixed bottom-5 right-5 z-50 transition-all transform duration-300 no-print">
+            <div :class="toast.type === 'error' ? 'bg-rose-800 text-rose-100' : 'bg-slate-900 text-emerald-400'" class="px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs flex items-center space-x-3">
+                <i :class="toast.type === 'error' ? 'fa-circle-xmark text-rose-400' : 'fa-circle-check text-emerald-400'" class="fa-solid text-base"></i>
+                <span>{{ toast.message }}</span>
+                <button @click="toast.show = false" class="text-slate-400 hover:text-white ml-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CODE -->
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    currentTab: 'dashboard',
+                    selectedYear: 2026,
+                    selectedMonth: new Date().getMonth(),
+                    searchQuery: '',
+                    filterStatusHuni: 'ALL',
+                    filterBlok: 'ALL',
+                    filterRt: 'ALL',
+                    currentPage: 1,
+                    itemsPerPage: 15,
+
+                    // State Mode Preview / Read-Only
+                    isPreviewOnly: false,
+
+                    googleSheetUrl: '',
+                    isSyncing: false,
+                    showGoogleSheetModal: false,
+                    showPengurusModal: false,
+                    syncStatusMessage: '',
+                    lastSyncTime: '',
+
+                    // Pengumuman State & Data
+                    searchPengumumanQuery: '',
+                    filterPengumumanKategori: 'ALL',
+                    showPengumumanModal: false,
+                    isEditingPengumuman: false,
+                    pengumumanForm: {
+                        id: null,
+                        judul: '',
+                        kategori: 'Informasi',
+                        tanggal: new Date().toISOString().split('T')[0],
+                        pembuat: 'Pengurus RW 19',
+                        isi: '',
+                        isPinned: true
+                    },
+                    pengumumanList: [
+                        {
+                            id: 101,
+                            judul: 'Kerja Bakti Masal & Kebersihan Drainase Memasuki Musim Hujan',
+                            kategori: 'Kegiatan',
+                            tanggal: '2026-02-10',
+                            pembuat: 'Pengurus RW 19 Griyashanta',
+                            isi: 'Dihimbau kepada seluruh warga RW 19 untuk dapat mengikuti kerja bakti masal pembersihan selokan & lingkungan yang akan dilaksanakan pada hari Minggu jam 06.30 WIB.',
+                            isPinned: true
+                        },
+                        {
+                            id: 102,
+                            judul: 'Penyesuaian Jadwal Pengambilan Sampah & Kas Keliling RT',
+                            kategori: 'Informasi',
+                            tanggal: '2026-01-28',
+                            pembuat: 'Sekretaris RW 19',
+                            isi: 'Pengambilan sampah rumah tangga beroperasi setiap hari Senin, Rabu, dan Jumat pagi. Mohon sampah dikemas dengan rapi di depan rumah masing-masing.',
+                            isPinned: true
+                        },
+                        {
+                            id: 103,
+                            judul: 'Himbauan Pelunasan Iuran Kebersihan & Keamanan Tepat Waktu',
+                            kategori: 'Keuangan',
+                            tanggal: '2026-01-15',
+                            pembuat: 'Bendahara RW 19',
+                            isi: 'Bapak/Ibu warga Griyashanta RW 19 dimohon melakukan pembayaran iuran bulanan sebelum tanggal 10 setiap bulannya melalui bendahara RT atau transfer.',
+                            isPinned: false
+                        }
+                    ],
+
+                    // Data Pengurus RW & RT
+                    pengurusInfo: {
+                        ketuaRw: 'Drs. H. M. Ali, M.Si',
+                        sekretarisRw: 'Bambang Sugihto, S.T.',
+                        rtList: [
+                            { rt: '01', ketuaRt: 'Sutrisno', bendaharaRt: 'Dewi Rahmawati' },
+                            { rt: '02', ketuaRt: 'Hendra Gunawan', bendaharaRt: 'Sri Wahyuni' },
+                            { rt: '03', ketuaRt: 'Agus Prasetyo', bendaharaRt: 'Rina Astuti' },
+                            { rt: '04', ketuaRt: 'Eko Mulyono', bendaharaRt: 'Siti Aminah' },
+                            { rt: '05', ketuaRt: 'Tri Suhartono', bendaharaRt: 'Lilik Handayani' }
+                        ]
+                    },
+
+                    // Form States
+                    showWargaModal: false,
+                    isEditingWarga: false,
+                    wargaForm: {
+                        id: null,
+                        rt: '01',
+                        blok: '',
+                        namaPemilik: '',
+                        namaPenghuni: '',
+                        statusHuni: 'Pribadi',
+                        tarifKebersihan: 30000,
+                        tarifKeamanan: 50000
+                    },
+
+                    showKasModal: false,
+                    kasForm: {
+                        type: 'MASUK',
+                        kategori: '',
+                        nominal: 0,
+                        keterangan: ''
+                    },
+
+                    // Kwitansi Print State
+                    selectedKwitansiWargaId: null,
+                    selectedKwitansiMonth: new Date().getMonth(),
+                    activeKwitansi: null,
+
+                    // Custom Alert / Confirm replacement states
+                    toast: { show: false, message: '', type: 'success' },
+                    confirmModal: { show: false, title: '', message: '', action: null },
+
+                    // Main App Data Collections
+                    wargaList: [],
+                    paymentRecords: {},
+                    kasList: [
+                        { id: 1, tanggal: '2026-01-05', type: 'MASUK', kategori: 'Sisa Kas Tahun Lalu', nominal: 2500000, keterangan: 'Saldo awal 2026' },
+                        { id: 2, tanggal: '2026-01-15', type: 'KELUAR', kategori: 'Honor Satpam', nominal: 1200000, keterangan: 'Gaji 2 petugas satpam' }
+                    ],
+
+                    monthNames: [
+                        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                    ],
+
+                    appsScriptCode: `function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var getSheetData = function(name) {
+    var sheet = ss.getSheetByName(name);
+    return sheet ? sheet.getDataRange().getValues() : [];
+  };
+  return ContentService.createTextOutput(JSON.stringify({
+    warga: getSheetData("Warga"),
+    payments: getSheetData("Payments"),
+    kas: getSheetData("Kas"),
+    pengurus: getSheetData("Pengurus"),
+    pengumuman: getSheetData("Pengumuman")
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    if (data.warga) {
+      var ws = ss.getSheetByName("Warga") || ss.insertSheet("Warga");
+      ws.clear();
+      ws.appendRow(["ID", "Blok", "Nama Pemilik", "Nama Penghuni", "Status Huni", "Tarif Kebersihan", "Tarif Keamanan", "RT"]);
+      data.warga.forEach(function(w) {
+        ws.appendRow([w.id, w.blok, w.namaPemilik, w.namaPenghuni || "", w.statusHuni, w.tarifKebersihan, w.tarifKeamanan, w.rt || "01"]);
+      });
+    }
+    
+    if (data.paymentRecords) {
+      var ps = ss.getSheetByName("Payments") || ss.insertSheet("Payments");
+      ps.clear();
+      ps.appendRow(["Key", "Paid", "Date", "Method"]);
+      Object.keys(data.paymentRecords).forEach(function(k) {
+        var item = data.paymentRecords[k];
+        ps.appendRow([k, item.paid ? "TRUE" : "FALSE", item.date || "", item.method || ""]);
+      });
+    }
+    
+    if (data.kasList) {
+      var ks = ss.getSheetByName("Kas") || ss.insertSheet("Kas");
+      ks.clear();
+      ks.appendRow(["ID", "Tanggal", "Type", "Kategori", "Nominal", "Keterangan"]);
+      data.kasList.forEach(function(k) {
+        ks.appendRow([k.id, k.tanggal, k.type, k.kategori, k.nominal, k.keterangan || ""]);
+      });
+    }
+
+    if (data.pengurus) {
+      var pgs = ss.getSheetByName("Pengurus") || ss.insertSheet("Pengurus");
+      pgs.clear();
+      pgs.appendRow(["Ketua RW", "Sekretaris RW"]);
+      pgs.appendRow([data.pengurus.ketuaRw || "", data.pengurus.sekretarisRw || ""]);
+      pgs.appendRow(["RT", "Ketua RT", "Bendahara RT"]);
+      if (data.pengurus.rtList) {
+        data.pengurus.rtList.forEach(function(r) {
+          pgs.appendRow([r.rt, r.ketuaRt, r.bendaharaRt]);
+        });
+      }
+    }
+
+    if (data.pengumuman) {
+      var pms = ss.getSheetByName("Pengumuman") || ss.insertSheet("Pengumuman");
+      pms.clear();
+      pms.appendRow(["ID", "Judul", "Kategori", "Tanggal", "Pembuat", "Isi", "Pinned"]);
+      data.pengumuman.forEach(function(p) {
+        pms.appendRow([p.id, p.judul, p.kategori, p.tanggal, p.pembuat, p.isi, p.isPinned ? "TRUE" : "FALSE"]);
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`
+                };
+            },
+
+            computed: {
+                pinnedPengumuman() {
+                    return this.pengumumanList.filter(p => p.isPinned);
+                },
+
+                filteredPengumumanList() {
+                    const q = this.searchPengumumanQuery.toLowerCase().trim();
+                    return this.pengumumanList.filter(p => {
+                        const matchQ = !q || p.judul.toLowerCase().includes(q) || p.isi.toLowerCase().includes(q) || p.pembuat.toLowerCase().includes(q);
+                        const matchKategori = this.filterPengumumanKategori === 'ALL' || p.kategori === this.filterPengumumanKategori;
+                        return matchQ && matchKategori;
+                    });
+                },
+
+                filteredWarga() {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    return this.wargaList.filter(w => {
+                        const matchQuery = !q || w.namaPemilik.toLowerCase().includes(q) || w.blok.toLowerCase().includes(q) || (w.namaPenghuni && w.namaPenghuni.toLowerCase().includes(q));
+                        const matchStatus = this.filterStatusHuni === 'ALL' || w.statusHuni === this.filterStatusHuni;
+                        const matchBlok = this.filterBlok === 'ALL' || w.blok.startsWith(this.filterBlok);
+                        const matchRt = this.filterRt === 'ALL' || (w.rt || '01') === this.filterRt;
+
+                        return matchQuery && matchStatus && matchBlok && matchRt;
+                    });
+                },
+
+                paginatedWarga() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    return this.filteredWarga.slice(start, start + this.itemsPerPage);
+                },
+
+                totalPages() {
+                    return Math.ceil(this.filteredWarga.length / this.itemsPerPage) || 1;
+                },
+
+                countActiveWarga() {
+                    return this.wargaList.filter(w => w.statusHuni !== 'Kosong').length;
+                },
+
+                currentMonthName() {
+                    return this.monthNames[this.selectedMonth];
+                },
+
+                totalIuranBulanIni() {
+                    let total = 0;
+                    const monthIdx = this.selectedMonth;
+                    this.wargaList.forEach(w => {
+                        if (this.isPaid(w.id, monthIdx)) {
+                            total += (w.tarifKebersihan + w.tarifKeamanan);
+                        }
+                    });
+                    return total;
+                },
+
+                targetIuranBulanan() {
+                    return this.wargaList.reduce((acc, w) => {
+                        if (w.statusHuni === 'Kosong') return acc;
+                        return acc + (w.tarifKebersihan + w.tarifKeamanan);
+                    }, 0);
+                },
+
+                totalBelumBayarBulanIni() {
+                    const monthIdx = this.selectedMonth;
+                    return this.wargaList.filter(w => w.statusHuni !== 'Kosong' && !this.isPaid(w.id, monthIdx)).length;
+                },
+
+                totalBelumBayarNominal() {
+                    const monthIdx = this.selectedMonth;
+                    return this.wargaList.reduce((acc, w) => {
+                        if (w.statusHuni !== 'Kosong' && !this.isPaid(w.id, monthIdx)) {
+                            return acc + (w.tarifKebersihan + w.tarifKeamanan);
+                        }
+                        return acc;
+                    }, 0);
+                },
+
+                totalPemasukanKas() {
+                    return this.kasList.filter(k => k.type === 'MASUK').reduce((acc, k) => acc + k.nominal, 0);
+                },
+
+                totalPengeluaranKas() {
+                    return this.kasList.filter(k => k.type === 'KELUAR').reduce((acc, k) => acc + k.nominal, 0);
+                },
+
+                totalSaldoKas() {
+                    let totalIuranCollected = 0;
+                    this.wargaList.forEach(w => {
+                        for (let m = 0; m < 12; m++) {
+                            if (this.isPaid(w.id, m)) {
+                                totalIuranCollected += (w.tarifKebersihan + w.tarifKeamanan);
+                            }
+                        }
+                    });
+                    return totalIuranCollected + this.totalPemasukanKas - this.totalPengeluaranKas;
+                }
+            },
+
+            methods: {
+                getKategoriPengumumanBadgeClass(kat) {
+                    switch (kat) {
+                        case 'Kegiatan': return 'bg-amber-100 text-amber-800 border border-amber-300';
+                        case 'Keuangan': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                        case 'Rapat': return 'bg-indigo-100 text-indigo-800 border border-indigo-300';
+                        case 'Darurat': return 'bg-rose-100 text-rose-800 border border-rose-300';
+                        default: return 'bg-blue-100 text-blue-800 border border-blue-300';
+                    }
+                },
+
+                openAddPengumumanModal() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat membuat pengumuman!', 'error');
+                        return;
+                    }
+                    this.isEditingPengumuman = false;
+                    this.pengumumanForm = {
+                        id: Date.now(),
+                        judul: '',
+                        kategori: 'Informasi',
+                        tanggal: new Date().toISOString().split('T')[0],
+                        pembuat: 'Pengurus RW 19',
+                        isi: '',
+                        isPinned: true
+                    };
+                    this.showPengumumanModal = true;
+                },
+
+                editPengumuman(item) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Pengeditan pengumuman dikunci!', 'error');
+                        return;
+                    }
+                    this.isEditingPengumuman = true;
+                    this.pengumumanForm = JSON.parse(JSON.stringify(item));
+                    this.showPengumumanModal = true;
+                },
+
+                savePengumuman() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Pengumuman tidak disimpan.', 'error');
+                        return;
+                    }
+
+                    if (!this.pengumumanForm.judul || !this.pengumumanForm.isi) {
+                        this.showToastMessage('Lengkapi Judul dan Isi Pengumuman!', 'error');
+                        return;
+                    }
+
+                    if (this.isEditingPengumuman) {
+                        const idx = this.pengumumanList.findIndex(p => p.id === this.pengumumanForm.id);
+                        if (idx !== -1) {
+                            this.pengumumanList[idx] = { ...this.pengumumanForm };
+                        }
+                        this.showToastMessage('Pengumuman berhasil diperbarui');
+                    } else {
+                        this.pengumumanList.unshift({ ...this.pengumumanForm });
+                        this.showToastMessage('Pengumuman baru berhasil diterbitkan');
+                    }
+                    this.showPengumumanModal = false;
+                },
+
+                togglePinPengumuman(item) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat menyematkan pengumuman!', 'error');
+                        return;
+                    }
+                    item.isPinned = !item.isPinned;
+                    this.showToastMessage(item.isPinned ? 'Pengumuman disematkan di Dashboard' : 'Sematan pengumuman dilepas');
+                },
+
+                deletePengumumanWithConfirm(item) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat menghapus pengumuman!', 'error');
+                        return;
+                    }
+
+                    this.confirmModal = {
+                        show: true,
+                        title: 'Hapus Pengumuman',
+                        message: `Apakah Anda yakin ingin menghapus pengumuman "${item.judul}"?`,
+                        action: () => {
+                            this.pengumumanList = this.pengumumanList.filter(p => p.id !== item.id);
+                            this.showToastMessage('Pengumuman berhasil dihapus');
+                        }
+                    };
+                },
+
+                togglePreviewMode() {
+                    this.isPreviewOnly = !this.isPreviewOnly;
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif! Fitur pengubahan data dikunci.');
+                    } else {
+                        this.showToastMessage('Mode Edit (Admin) aktif! Anda dapat mengedit data kembali.');
+                    }
+                },
+
+                showToastMessage(msg, type = 'success') {
+                    this.toast = { show: true, message: msg, type: type };
+                    setTimeout(() => { this.toast.show = false; }, 3500);
+                },
+
+                getPengurusRt(rtNo) {
+                    const found = this.pengurusInfo.rtList.find(r => r.rt === (rtNo || '01'));
+                    return found || { ketuaRt: 'Ketua RT', bendaharaRt: 'Bendahara RT' };
+                },
+
+                savePengurus() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Pengubahan pengurus ditolak.', 'error');
+                        return;
+                    }
+                    this.showPengurusModal = false;
+                    this.showToastMessage('Data Pengurus RW & RT berhasil disimpan!');
+                    this.saveDataToSheet();
+                },
+
+                switchTab(tab) {
+                    this.currentTab = tab;
+                    if (tab === 'dashboard') {
+                        this.$nextTick(() => { this.renderCharts(); });
+                    }
+                },
+
+                copyAppsScriptCode() {
+                    const el = document.createElement('textarea');
+                    el.value = this.appsScriptCode;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    this.showToastMessage('Kode Apps Script berhasil disalin!');
+                },
+
+                async saveDataToSheet() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Penyimpanan ke Sheet dikunci.', 'error');
+                        return;
+                    }
+
+                    if (!this.googleSheetUrl) {
+                        this.showGoogleSheetModal = true;
+                        return;
+                    }
+                    this.isSyncing = true;
+                    this.syncStatusMessage = 'Mengirim data ke Google Sheets...';
+
+                    try {
+                        const payload = {
+                            warga: this.wargaList,
+                            paymentRecords: this.paymentRecords,
+                            kasList: this.kasList,
+                            pengurus: this.pengurusInfo,
+                            pengumuman: this.pengumumanList
+                        };
+
+                        await fetch(this.googleSheetUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        this.lastSyncTime = new Date().toLocaleString('id-ID');
+                        this.showToastMessage('Berhasil menyimpan data ke Google Sheets!');
+                    } catch (err) {
+                        console.error(err);
+                        this.showToastMessage('Gagal menyimpan data ke Sheet.', 'error');
+                    } finally {
+                        this.isSyncing = false;
+                    }
+                },
+
+                async syncDataFromSheet() {
+                    if (!this.googleSheetUrl) {
+                        this.showGoogleSheetModal = true;
+                        return;
+                    }
+                    this.isSyncing = true;
+                    this.syncStatusMessage = 'Mengambil data dari Google Sheets...';
+
+                    try {
+                        const res = await fetch(this.googleSheetUrl);
+                        const data = await res.json();
+
+                        if (data.warga && data.warga.length > 1) {
+                            const parsedWarga = [];
+                            for (let i = 1; i < data.warga.length; i++) {
+                                const row = data.warga[i];
+                                if (!row[0]) continue;
+                                parsedWarga.push({
+                                    id: Number(row[0]),
+                                    blok: String(row[1]),
+                                    namaPemilik: String(row[2]),
+                                    namaPenghuni: String(row[3] || ''),
+                                    statusHuni: String(row[4]),
+                                    tarifKebersihan: Number(row[5] || 30000),
+                                    tarifKeamanan: Number(row[6] || 50000),
+                                    rt: String(row[7] || '01')
+                                });
+                            }
+                            if (parsedWarga.length > 0) this.wargaList = parsedWarga;
+                        }
+
+                        if (data.pengurus && data.pengurus.length > 1) {
+                            this.pengurusInfo.ketuaRw = data.pengurus[1][0] || this.pengurusInfo.ketuaRw;
+                            this.pengurusInfo.sekretarisRw = data.pengurus[1][1] || this.pengurusInfo.sekretarisRw;
+                            
+                            if (data.pengurus.length > 3) {
+                                const newRtList = [];
+                                for (let i = 3; i < data.pengurus.length; i++) {
+                                    const row = data.pengurus[i];
+                                    if (row[0]) {
+                                        newRtList.push({
+                                            rt: String(row[0]),
+                                            ketuaRt: String(row[1] || ''),
+                                            bendaharaRt: String(row[2] || '')
+                                        });
+                                    }
+                                }
+                                if (newRtList.length > 0) this.pengurusInfo.rtList = newRtList;
+                            }
+                        }
+
+                        if (data.payments && data.payments.length > 1) {
+                            const newRecords = {};
+                            for (let i = 1; i < data.payments.length; i++) {
+                                const row = data.payments[i];
+                                if (!row[0]) continue;
+                                newRecords[row[0]] = {
+                                    paid: String(row[1]).toUpperCase() === 'TRUE',
+                                    date: String(row[2] || ''),
+                                    method: String(row[3] || 'Tunai')
+                                };
+                            }
+                            this.paymentRecords = newRecords;
+                        }
+
+                        if (data.pengumuman && data.pengumuman.length > 1) {
+                            const parsedPengumuman = [];
+                            for (let i = 1; i < data.pengumuman.length; i++) {
+                                const row = data.pengumuman[i];
+                                if (!row[0]) continue;
+                                parsedPengumuman.push({
+                                    id: Number(row[0]),
+                                    judul: String(row[1] || ''),
+                                    kategori: String(row[2] || 'Informasi'),
+                                    tanggal: String(row[3] || ''),
+                                    pembuat: String(row[4] || 'Pengurus RW 19'),
+                                    isi: String(row[5] || ''),
+                                    isPinned: String(row[6]).toUpperCase() === 'TRUE'
+                                });
+                            }
+                            if (parsedPengumuman.length > 0) this.pengumumanList = parsedPengumuman;
+                        }
+
+                        this.lastSyncTime = new Date().toLocaleString('id-ID');
+                        this.showToastMessage('Berhasil mendownload data dari Google Sheets!');
+                    } catch (err) {
+                        console.error(err);
+                        this.showToastMessage('Gagal menarik data dari Google Sheets.', 'error');
+                    } finally {
+                        this.isSyncing = false;
+                    }
+                },
+
+                tabClass(tab) {
+                    return this.currentTab === tab
+                        ? 'bg-emerald-600 text-white font-semibold px-3 py-1.5 rounded-xl text-xs shadow-sm transition'
+                        : 'text-slate-300 hover:bg-emerald-800/50 hover:text-white px-3 py-1.5 rounded-xl text-xs transition';
+                },
+
+                formatRupiah(val) {
+                    if (!val) return '0';
+                    return val.toLocaleString('id-ID');
+                },
+
+                getStatusBadgeClass(status) {
+                    switch (status) {
+                        case 'Pribadi': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                        case 'Kontrak': return 'bg-blue-100 text-blue-800 border border-blue-300';
+                        case 'Kost': return 'bg-amber-100 text-amber-800 border border-amber-300';
+                        case 'Usaha': return 'bg-purple-100 text-purple-800 border border-purple-300';
+                        case 'Kosong': return 'bg-slate-200 text-slate-600 border border-slate-300';
+                        default: return 'bg-slate-100 text-slate-700';
+                    }
+                },
+
+                getMatrixButtonClass(wargaId, monthIdx, statusHuni) {
+                    if (statusHuni === 'Kosong') return 'bg-slate-100 text-slate-400 border border-slate-200';
+                    if (this.isPaid(wargaId, monthIdx)) {
+                        return 'bg-emerald-500 text-white shadow-xs hover:bg-emerald-600';
+                    }
+                    return 'bg-rose-100 text-rose-600 border border-rose-300 hover:bg-rose-200';
+                },
+
+                isPaid(wargaId, monthIndex) {
+                    const key = `${this.selectedYear}_${wargaId}_${monthIndex}`;
+                    return !!(this.paymentRecords[key] && this.paymentRecords[key].paid);
+                },
+
+                togglePaymentStatus(wargaId, monthIndex) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat mengubah status iuran!', 'error');
+                        return;
+                    }
+
+                    const key = `${this.selectedYear}_${wargaId}_${monthIndex}`;
+                    const current = this.isPaid(wargaId, monthIndex);
+
+                    if (!current) {
+                        this.paymentRecords[key] = {
+                            paid: true,
+                            date: new Date().toISOString().split('T')[0],
+                            method: 'Tunai'
+                        };
+                        this.showToastMessage('Status iuran diperbarui: LUNAS');
+                    } else {
+                        delete this.paymentRecords[key];
+                        this.showToastMessage('Status iuran dibatalkan', 'error');
+                    }
+                    if (this.currentTab === 'dashboard') this.renderCharts();
+                },
+
+                payFullYear(wargaId) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat melunasi iuran!', 'error');
+                        return;
+                    }
+
+                    for (let m = 0; m < 12; m++) {
+                        const key = `${this.selectedYear}_${wargaId}_${m}`;
+                        this.paymentRecords[key] = {
+                            paid: true,
+                            date: new Date().toISOString().split('T')[0],
+                            method: 'Tahunan'
+                        };
+                    }
+                    this.showToastMessage('Berhasil melunasi iuran 1 Tahun Full untuk warga ini!');
+                },
+
+                onStatusHuniChange() {
+                    if (this.wargaForm.statusHuni === 'Kosong') {
+                        this.wargaForm.tarifKebersihan = 10000;
+                        this.wargaForm.tarifKeamanan = 25000;
+                    } else if (this.wargaForm.statusHuni === 'Usaha' || this.wargaForm.statusHuni === 'Kost') {
+                        this.wargaForm.tarifKebersihan = 50000;
+                        this.wargaForm.tarifKeamanan = 75000;
+                    } else {
+                        this.wargaForm.tarifKebersihan = 30000;
+                        this.wargaForm.tarifKeamanan = 50000;
+                    }
+                },
+
+                openAddWargaModal() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat menambah warga baru!', 'error');
+                        return;
+                    }
+                    this.isEditingWarga = false;
+                    this.wargaForm = {
+                        id: Date.now(),
+                        rt: '01',
+                        blok: '',
+                        namaPemilik: '',
+                        namaPenghuni: '',
+                        statusHuni: 'Pribadi',
+                        tarifKebersihan: 30000,
+                        tarifKeamanan: 50000
+                    };
+                    this.showWargaModal = true;
+                },
+
+                editWarga(warga) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat mengedit data warga!', 'error');
+                        return;
+                    }
+                    this.isEditingWarga = true;
+                    this.wargaForm = JSON.parse(JSON.stringify(warga));
+                    this.showWargaModal = true;
+                },
+
+                saveWarga() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Data tidak disimpan.', 'error');
+                        return;
+                    }
+
+                    if (!this.wargaForm.blok || !this.wargaForm.namaPemilik) {
+                        this.showToastMessage('Mohon isi Blok dan Nama Pemilik!', 'error');
+                        return;
+                    }
+
+                    if (this.isEditingWarga) {
+                        const idx = this.wargaList.findIndex(w => w.id === this.wargaForm.id);
+                        if (idx !== -1) {
+                            this.wargaList[idx] = { ...this.wargaForm };
+                        }
+                        this.showToastMessage('Data warga berhasil diperbarui');
+                    } else {
+                        this.wargaList.unshift({ ...this.wargaForm });
+                        this.showToastMessage('Warga baru berhasil ditambahkan');
+                    }
+                    this.showWargaModal = false;
+                },
+
+                deleteWargaWithConfirm(warga) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat menghapus warga!', 'error');
+                        return;
+                    }
+
+                    this.confirmModal = {
+                        show: true,
+                        title: 'Hapus Data Warga',
+                        message: `Apakah Anda yakin ingin menghapus data warga ${warga.namaPemilik} (${warga.blok})?`,
+                        action: () => {
+                            this.wargaList = this.wargaList.filter(w => w.id !== warga.id);
+                            this.showToastMessage('Data warga berhasil dihapus');
+                        }
+                    };
+                },
+
+                executeConfirmAction() {
+                    if (this.confirmModal.action) {
+                        this.confirmModal.action();
+                    }
+                    this.confirmModal.show = false;
+                },
+
+                viewDetailWarga(warga) {
+                    this.selectedKwitansiWargaId = warga.id;
+                    this.currentTab = 'laporan';
+                    this.generateKwitansi();
+                },
+
+                openAddKasModal() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat menambah kas!', 'error');
+                        return;
+                    }
+
+                    this.kasForm = {
+                        type: 'MASUK',
+                        kategori: '',
+                        nominal: 0,
+                        keterangan: ''
+                    };
+                    this.showKasModal = true;
+                },
+
+                saveKas() {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Catatan kas tidak disimpan.', 'error');
+                        return;
+                    }
+
+                    if (!this.kasForm.kategori || !this.kasForm.nominal) {
+                        this.showToastMessage('Lengkapi Kategori dan Nominal Kas!', 'error');
+                        return;
+                    }
+                    this.kasList.unshift({
+                        id: Date.now(),
+                        tanggal: new Date().toISOString().split('T')[0],
+                        ...this.kasForm
+                    });
+                    this.showKasModal = false;
+                    this.showToastMessage('Transaksi kas berhasil ditambahkan');
+                },
+
+                deleteKasWithConfirm(id) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Tidak dapat menghapus catatan kas!', 'error');
+                        return;
+                    }
+
+                    this.confirmModal = {
+                        show: true,
+                        title: 'Hapus Transaksi Kas',
+                        message: 'Apakah Anda yakin ingin menghapus catatan kas ini?',
+                        action: () => {
+                            this.kasList = this.kasList.filter(k => k.id !== id);
+                            this.showToastMessage('Transaksi kas dihapus');
+                        }
+                    };
+                },
+
+                generateKwitansi() {
+                    if (!this.selectedKwitansiWargaId) return;
+                    const w = this.wargaList.find(x => x.id === Number(this.selectedKwitansiWargaId));
+                    if (!w) return;
+
+                    this.activeKwitansi = {
+                        warga: w,
+                        monthIndex: Number(this.selectedKwitansiMonth)
+                    };
+                },
+
+                printKwitansi() {
+                    window.print();
+                },
+
+                generateMockWarga(targetCount = 200) {
+                    if (this.isPreviewOnly) {
+                        this.showToastMessage('Mode Preview aktif. Generasi data simulasi dikunci.', 'error');
+                        return;
+                    }
+
+                    const sample = [];
+                    const blocks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+                    const rts = ['01', '02', '03', '04', '05'];
+                    const firstNames = ['Slamet', 'Bambang', 'Siti', 'Dewi', 'Eko', 'Rini', 'Agus', 'Tri', 'Sri', 'Joko', 'Hendra', 'Nur', 'Arif', 'Lilik'];
+                    const lastNames = ['Soeprapto', 'Suharto', 'Mulyono', 'Santoso', 'Wijaya', 'Kurniawan', 'Hidayat', 'Wibowo', 'Prasetyo', 'Laksana'];
+                    const statuses = ['Pribadi', 'Pribadi', 'Pribadi', 'Kontrak', 'Kost', 'Usaha', 'Kosong'];
+
+                    let idCounter = 1;
+                    const perBlock = Math.ceil(targetCount / blocks.length);
+
+                    for (let b = 0; b < blocks.length; b++) {
+                        for (let n = 1; n <= perBlock; n++) {
+                            if (idCounter > targetCount) break;
+
+                            const status = statuses[(b + n) % statuses.length];
+                            const fn = firstNames[(b + n) % firstNames.length];
+                            const ln = lastNames[(b * 3 + n) % lastNames.length];
+                            const owner = `${fn} ${ln}`;
+                            const rtVal = rts[(b + n) % rts.length];
+
+                            sample.push({
+                                id: idCounter,
+                                rt: rtVal,
+                                blok: `${blocks[b]}-${String(n).padStart(2, '0')}`,
+                                namaPemilik: owner,
+                                namaPenghuni: (status === 'Kontrak' || status === 'Kost') ? `Penghuni ${blocks[b]}-${n}` : '',
+                                statusHuni: status,
+                                tarifKebersihan: status === 'Usaha' || status === 'Kost' ? 50000 : (status === 'Kosong' ? 10000 : 30000),
+                                tarifKeamanan: status === 'Usaha' || status === 'Kost' ? 75000 : (status === 'Kosong' ? 25000 : 50000)
+                            });
+
+                            if (n % 3 !== 0) {
+                                this.paymentRecords[`2026_${idCounter}_0`] = { paid: true, date: '2026-01-10', method: 'Tunai' };
+                            }
+                            if (n % 2 === 0) {
+                                this.paymentRecords[`2026_${idCounter}_1`] = { paid: true, date: '2026-02-05', method: 'Transfer' };
+                            }
+
+                            idCounter++;
+                        }
+                    }
+
+                    this.wargaList = sample;
+                    this.showToastMessage(`Berhasil memuat ${this.wargaList.length} data simulasi Warga RW 19 Griyashanta!`);
+                    if (this.currentTab === 'dashboard') this.renderCharts();
+                },
+
+                renderCharts() {
+                    if (typeof Chart === 'undefined') return;
+
+                    // Chart 1: Monthly Payment Collection
+                    const ctxBar = document.getElementById('monthlyPaymentChart');
+                    if (ctxBar) {
+                        if (window.barChartInst) window.barChartInst.destroy();
+
+                        const monthlyTotals = this.monthNames.map((m, idx) => {
+                            let sum = 0;
+                            this.wargaList.forEach(w => {
+                                if (this.isPaid(w.id, idx)) sum += (w.tarifKebersihan + w.tarifKeamanan);
+                            });
+                            return sum;
+                        });
+
+                        window.barChartInst = new Chart(ctxBar, {
+                            type: 'bar',
+                            data: {
+                                labels: this.monthNames.map(m => m.substring(0, 3)),
+                                datasets: [{
+                                    label: 'Terkumpul (Rp)',
+                                    data: monthlyTotals,
+                                    backgroundColor: '#16a34a',
+                                    borderRadius: 6
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    y: { ticks: { callback: v => 'Rp ' + (v / 1000) + 'k' } }
+                                }
+                            }
+                        });
+                    }
+
+                    // Chart 2: Status Huni Pie
+                    const ctxPie = document.getElementById('occupancyPieChart');
+                    if (ctxPie) {
+                        if (window.pieChartInst) window.pieChartInst.destroy();
+
+                        const counts = {
+                            Pribadi: 0, Kontrak: 0, Kost: 0, Usaha: 0, Kosong: 0
+                        };
+                        this.wargaList.forEach(w => {
+                            if (counts[w.statusHuni] !== undefined) counts[w.statusHuni]++;
+                        });
+
+                        window.pieChartInst = new Chart(ctxPie, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(counts),
+                                datasets: [{
+                                    data: Object.values(counts),
+                                    backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#cbd5e1']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { position: 'bottom' } }
+                            }
+                        });
+                    }
+                }
+            },
+
+            mounted() {
+                this.generateMockWarga(200);
+                this.$nextTick(() => {
+                    this.renderCharts();
+                });
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
