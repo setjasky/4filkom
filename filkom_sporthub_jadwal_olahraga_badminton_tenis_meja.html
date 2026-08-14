@@ -102,7 +102,7 @@
                     <span>Semua Olahraga</span>
                 </button>
                 <button id="sportFilterBadminton" onclick="selectSportFilter('Badminton')" class="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white hover:bg-slate-800">
-                    <i class="fa-solid fa-shuttlecock text-emerald-400"></i>
+                    <i class="fa-solid fa-badminton text-emerald-400"></i>
                     <span>🏸 Badminton (GOR FILKOM)</span>
                 </button>
                 <button id="sportFilterTenis" onclick="selectSportFilter('Tenis Meja')" class="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white hover:bg-slate-800">
@@ -130,7 +130,7 @@
 
             <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4 border-l-4 border-l-emerald-500">
                 <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
-                    <i class="fa-solid fa-shuttlecock text-xl"></i>
+                    <i class="fa-solid fa-badminton text-xl"></i>
                 </div>
                 <div>
                     <p class="text-xs text-slate-400 font-medium">Badminton</p>
@@ -272,7 +272,7 @@
                     <div id="matrixSectionBadminton" class="bg-slate-950/60 rounded-xl border border-slate-800/80 p-4 space-y-3">
                         <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2">
                             <span class="text-sm font-bold text-emerald-400 flex items-center space-x-2">
-                                <i class="fa-solid fa-shuttlecock"></i>
+                                <i class="fa-solid fa-badminton"></i>
                                 <span>Area Badminton (GOR FILKOM)</span>
                             </span>
                             <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">2 Lapangan</span>
@@ -1228,7 +1228,7 @@ function doPost(e) {
                 const status = getSessionStatus(item.date, item.startTime, item.endTime);
                 const isBadminton = item.sport === 'Badminton';
                 const badgeClass = isBadminton ? 'badge-badminton' : 'badge-tenis';
-                const sportIcon = isBadminton ? 'fa-shuttlecock' : 'fa-table-tennis-paddle-ball';
+                const sportIcon = isBadminton ? 'fa-badminton' : 'fa-table-tennis-paddle-ball';
                 const currentCount = item.players ? item.players.length : 0;
                 const isFull = currentCount >= item.maxPlayers;
 
