@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura CSS Studio | Modern Web Aesthetics & Design Generators</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e1e7fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        },
+                        cyber: {
+                            pink: '#ff007f',
+                            cyan: '#00f3ff',
+                            yellow: '#ffe600',
+                            purple: '#9d00ff'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+                        'shimmer': 'shimmer 2.5s infinite linear',
+                        'border-beam': 'borderBeam 4s linear infinite',
+                        'spin-slow': 'spin 12s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-12px) rotate(1deg)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.6', filter: 'drop-shadow(0 0 15px rgba(99,102,241,0.5))' },
+                            '50%': { opacity: '1', filter: 'drop-shadow(0 0 30px rgba(168,85,247,0.8))' },
+                        },
+                        shimmer: {
+                            '100%': { transform: 'translateX(100%)' }
+                        },
+                        borderBeam: {
+                            '100%': { offsetDistance: '100%' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* Neumorphism Dark */
+        .neu-dark {
+            background: #18181b;
+            box-shadow:  8px 8px 16px #101012,
+                        -8px -8px 16px #202024;
+        }
+        .neu-dark-inset {
+            background: #18181b;
+            box-shadow: inset 5px 5px 10px #101012,
+                        inset -5px -5px 10px #202024;
+        }
+
+        /* Neumorphism Light */
+        .neu-light {
+            background: #e2e8f0;
+            box-shadow:  8px 8px 16px #cbd5e1,
+                        -8px -8px 16px #ffffff;
+        }
+        .neu-light-inset {
+            background: #e2e8f0;
+            box-shadow: inset 5px 5px 10px #cbd5e1,
+                        inset -5px -5px 10px #ffffff;
+        }
+
+        /* Claymorphism */
+        .clay-card {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            border-radius: 24px;
+            box-shadow: 12px 12px 24px rgba(79, 70, 229, 0.3),
+                        inset -6px -6px 12px rgba(0, 0, 0, 0.2),
+                        inset 6px 6px 12px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Cyberpunk Glitch & Neon Effects */
+        .cyber-border {
+            position: relative;
+            background: #09090b;
+        }
+        .cyber-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(45deg, #ff007f, #00f3ff, #9d00ff, #ffe600);
+            border-radius: inherit;
+            z-index: -1;
+            filter: blur(4px);
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        .cyber-border:hover::before {
+            opacity: 1;
+            filter: blur(8px);
+        }
+
+        /* Interactive 3D Card Perspective */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .preserve-3d {
+            transform-style: preserve-3d;
+        }
+
+        /* Mesh Gradient Canvas Background */
+        .bg-mesh {
+            background-color: #090d16;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.25) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.2) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(14, 165, 233, 0.2) 0px, transparent 50%);
+        }
+
+        /* Custom Input Range Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-track {
+            height: 6px;
+            background: #334155;
+            border-radius: 4px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Shimmer Loading Animation */
+        .shimmer-box {
+            position: relative;
+            overflow: hidden;
+            background: #1e293b;
+        }
+        .shimmer-box::after {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            transform: translateX(-100%);
+            background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0,
+                rgba(255, 255, 255, 0.08) 20%,
+                rgba(255, 255, 255, 0.18) 60%,
+                rgba(255, 255, 255, 0)
+            );
+            animation: shimmer 2s infinite;
+            content: '';
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300" id="body-root">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl transition-colors duration-300" id="main-header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[2px] shadow-lg shadow-indigo-500/20">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-wand-magic-sparkles text-indigo-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+                        Aura<span class="text-indigo-500">CSS</span>
+                    </span>
+                    <span class="hidden sm:inline-block text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 ml-2">v2.5 Studio</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 text-sm font-medium text-slate-300">
+                <a href="#hero" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition-colors" data-i18n="nav_home">Home</a>
+                <a href="#aesthetics" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition-colors" data-i18n="nav_styles">Design Styles</a>
+                <a href="#generators" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition-colors" data-i18n="nav_generators">CSS Generators</a>
+                <a href="#uikit" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition-colors" data-i18n="nav_uikit">UI Components</a>
+                <a href="#snippets" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition-colors" data-i18n="nav_vault">CSS Vault</a>
+            </nav>
+
+            <!-- Actions & Theme Toggle -->
+            <div class="flex items-center space-x-3">
+                <!-- Language Toggle Button (EN / ID) -->
+                <button id="lang-toggle-btn" class="px-3 py-2 rounded-xl border border-slate-800 bg-slate-900/80 text-slate-300 hover:text-white hover:border-slate-700 transition-all text-xs font-mono font-bold flex items-center space-x-1.5" title="Switch Language / Ganti Bahasa">
+                    <i class="fa-solid fa-globe text-indigo-400"></i>
+                    <span id="lang-label">EN</span>
+                </button>
+
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle-btn" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 text-slate-300 hover:text-white hover:border-slate-700 transition-all text-sm" title="Toggle Light/Dark Theme">
+                    <i class="fa-solid fa-moon text-indigo-400" id="theme-icon"></i>
+                </button>
+
+                <!-- Quick Copy Preset Action -->
+                <a href="#generators" class="hidden sm:inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all transform active:scale-95">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span data-i18n="btn_open_gen">Open Generator</span>
+                </a>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden border-b border-slate-800 bg-slate-950 px-4 pt-2 pb-4 space-y-2">
+            <a href="#hero" class="block px-3 py-2 rounded-md text-slate-300 hover:bg-slate-800" data-i18n="nav_home">Home</a>
+            <a href="#aesthetics" class="block px-3 py-2 rounded-md text-slate-300 hover:bg-slate-800" data-i18n="nav_styles">Design Styles</a>
+            <a href="#generators" class="block px-3 py-2 rounded-md text-slate-300 hover:bg-slate-800" data-i18n="nav_generators">CSS Generators</a>
+            <a href="#uikit" class="block px-3 py-2 rounded-md text-slate-300 hover:bg-slate-800" data-i18n="nav_uikit">UI Components</a>
+            <a href="#snippets" class="block px-3 py-2 rounded-md text-slate-300 hover:bg-slate-800" data-i18n="nav_vault">CSS Vault</a>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- HERO SECTION -->
+        <section id="hero" class="relative overflow-hidden py-20 lg:py-28 bg-mesh border-b border-slate-800/50">
+            <!-- Ambient Glow Orbs -->
+            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+            <div class="absolute top-10 right-10 w-[300px] h-[300px] bg-pink-600/15 blur-[100px] rounded-full pointer-events-none"></div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    
+                    <!-- Left Hero Content -->
+                    <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/30 text-xs font-semibold text-indigo-300 shadow-inner">
+                            <span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+                            <span data-i18n="hero_badge">Explore Modern CSS & Layout Architecture</span>
+                        </div>
+
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
+                            <span data-i18n="hero_title_1">Craft Breathtaking</span> <br class="hidden sm:inline"/>
+                            <span class="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent" data-i18n="hero_title_2">
+                                User Experiences
+                            </span>
+                            <span data-i18n="hero_title_3">With CSS.</span>
+                        </h1>
+
+                        <p class="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed" data-i18n="hero_desc">
+                            A curated design system, aesthetic style explorer, and suite of interactive generators. Master Glassmorphism, Neumorphism, Cyberpunk Neon, Bento Grids, and modern fluid styling.
+                        </p>
+
+                        <!-- CTA Action Buttons -->
+                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+                            <a href="#generators" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-95 transition-all flex items-center space-x-2">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span data-i18n="btn_try_gen">Try Interactive Generators</span>
+                            </a>
+                            <a href="#uikit" class="px-6 py-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-200 font-medium hover:bg-slate-800 transition-all flex items-center space-x-2">
+                                <i class="fa-solid fa-layer-group text-slate-400"></i>
+                                <span data-i18n="btn_browse_ui">Browse UI Kit</span>
+                            </a>
+                        </div>
+
+                        <!-- Mini Feature Metrics -->
+                        <div class="pt-8 border-t border-slate-800/80 grid grid-cols-3 gap-4 text-center lg:text-left max-w-md mx-auto lg:mx-0">
+                            <div>
+                                <p class="text-2xl font-bold text-white">6+</p>
+                                <p class="text-xs text-slate-400" data-i18n="stat_trends">Design Trends</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-indigo-400">5</p>
+                                <p class="text-xs text-slate-400" data-i18n="stat_gens">CSS Generators</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-pink-400">100%</p>
+                                <p class="text-xs text-slate-400" data-i18n="stat_pure">Pure CSS/HTML</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Interactive 3D Card Stack Preview -->
+                    <div class="lg:col-span-5 perspective-1000 flex justify-center">
+                        <div id="hero-card-container" class="relative w-full max-w-sm aspect-[4/5] preserve-3d transition-transform duration-500 ease-out cursor-pointer group">
+                            
+                            <!-- Background Floating Decorative Card -->
+                            <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-pink-500/20 to-purple-600/20 border border-pink-500/30 transform -rotate-6 translate-y-3 blur-[1px] group-hover:-rotate-12 transition-transform duration-500"></div>
+                            
+                            <!-- Main Glass Card Showcase -->
+                            <div class="absolute inset-0 rounded-3xl glass-panel p-6 flex flex-col justify-between shadow-2xl border border-white/20 transform group-hover:scale-[1.03] transition-all duration-500">
+                                <div>
+                                    <!-- Card Header Badge -->
+                                    <div class="flex items-center justify-between mb-6">
+                                        <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                                            <i class="fa-solid fa-cube text-xl"></i>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                            backdrop-filter
+                                        </span>
+                                    </div>
+
+                                    <h3 class="text-2xl font-bold text-white mb-2">Modern Glass Card</h3>
+                                    <p class="text-slate-300 text-sm leading-relaxed mb-6">
+                                        Subtle translucent backdrop blur, semi-transparent borders, and multi-layered glow effects.
+                                    </p>
+
+                                    <!-- Code Pill Snippet -->
+                                    <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800 font-mono text-xs text-indigo-300 space-y-1">
+                                        <div class="text-slate-500">/* Glassmorphism CSS */</div>
+                                        <div>background: <span class="text-pink-400">rgba(255,255,255,0.05)</span>;</div>
+                                        <div>backdrop-filter: <span class="text-cyan-400">blur(16px)</span>;</div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Bottom Stats -->
+                                <div class="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span>Interactive 3D</span>
+                                    </div>
+                                    <span class="text-indigo-400 font-mono">Hover to tilt</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 1: DESIGN TRENDS & AESTHETICS -->
+        <section id="aesthetics" class="py-20 border-b border-slate-800/60">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold mb-2" data-i18n="styles_tag">Visual Spectrum</h2>
+                    <p class="text-3xl sm:text-4xl font-extrabold text-white" data-i18n="styles_heading">Modern CSS Design Styles</p>
+                    <p class="text-slate-400 mt-3 text-base" data-i18n="styles_sub">
+                        Explore the foundational modern design paradigms used in high-end web applications today.
+                    </p>
+                </div>
+
+                <!-- Tabs Header -->
+                <div class="flex items-center justify-start sm:justify-center overflow-x-auto pb-4 mb-8 space-x-2 scrollbar-none" id="style-tabs">
+                    <button data-tab="tab-glass" class="style-tab-btn active px-5 py-2.5 rounded-xl font-medium text-sm transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/30 whitespace-nowrap">
+                        <i class="fa-solid fa-square-full opacity-70 mr-2 text-xs"></i> Glassmorphism
+                    </button>
+                    <button data-tab="tab-neu" class="style-tab-btn px-5 py-2.5 rounded-xl font-medium text-sm transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 whitespace-nowrap">
+                        <i class="fa-solid fa-circle-half-stroke mr-2 text-xs"></i> Neumorphism
+                    </button>
+                    <button data-tab="tab-cyber" class="style-tab-btn px-5 py-2.5 rounded-xl font-medium text-sm transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 whitespace-nowrap">
+                        <i class="fa-solid fa-bolt mr-2 text-xs text-cyber-cyan"></i> Cyberpunk Neon
+                    </button>
+                    <button data-tab="tab-bento" class="style-tab-btn px-5 py-2.5 rounded-xl font-medium text-sm transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 whitespace-nowrap">
+                        <i class="fa-solid fa-table-cells-large mr-2 text-xs"></i> Bento Grid
+                    </button>
+                    <button data-tab="tab-clay" class="style-tab-btn px-5 py-2.5 rounded-xl font-medium text-sm transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 whitespace-nowrap">
+                        <i class="fa-solid fa-cookie-bite mr-2 text-xs"></i> Claymorphism
+                    </button>
+                </div>
+
+                <!-- Tab Panels Container -->
+                <div class="bg-slate-900/40 rounded-3xl border border-slate-800 p-6 sm:p-10">
+                    
+                    <!-- 1. GLASSMORPHISM TAB PANEL -->
+                    <div id="tab-glass" class="style-panel block">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            <div class="space-y-4">
+                                <span class="px-3 py-1 rounded-full text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Glassmorphism Aesthetic</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Depth Through Translucency</h3>
+                                <p class="text-slate-400 leading-relaxed text-sm sm:text-base">
+                                    Glassmorphism relies on semi-transparent backgrounds combined with strong blur filters (`backdrop-filter: blur()`). It creates a sleek, multi-layered sense of visual hierarchy that elevates UI cards, navigation bars, and modal windows.
+                                </p>
+                                <ul class="space-y-2 text-sm text-slate-300">
+                                    <li class="flex items-center space-x-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        <span>Subtle white border for light reflections (`border: 1px solid rgba(255,255,255,0.12)`)</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        <span>Multi-layered background colors with opacity</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        <span>Vibrant background blobs to accentuate transparency</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Interactive Live Glass Showcase Box -->
+                            <div class="relative p-8 rounded-2xl bg-gradient-to-tr from-indigo-900 via-purple-900 to-pink-800 overflow-hidden flex items-center justify-center min-h-[280px]">
+                                <!-- Background shapes -->
+                                <div class="absolute w-32 h-32 rounded-full bg-cyan-400 blur-xl top-4 left-4 animate-pulse"></div>
+                                <div class="absolute w-40 h-40 rounded-full bg-pink-500 blur-xl bottom-2 right-2"></div>
+                                
+                                <div class="glass-panel rounded-2xl p-6 text-white max-w-sm w-full relative z-10 shadow-2xl">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-bold text-lg">Glass Card</h4>
+                                        <i class="fa-solid fa-gem text-indigo-300"></i>
+                                    </div>
+                                    <p class="text-xs text-slate-200 mb-4">Floating gracefully over ambient colorful lights.</p>
+                                    <button class="w-full py-2 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-semibold backdrop-blur-md transition-all border border-white/30">
+                                        Interactive Element
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. NEUMORPHISM TAB PANEL -->
+                    <div id="tab-neu" class="style-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            <div class="space-y-4">
+                                <span class="px-3 py-1 rounded-full text-xs font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20">Soft UI / Neumorphism</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Extruded & Inset Shadows</h3>
+                                <p class="text-slate-400 leading-relaxed text-sm sm:text-base">
+                                    Neumorphism mimics physical plastic extruded forms using dual directional box-shadows (one light source highlight, one dark shadow source).
+                                </p>
+                                <div class="flex space-x-4">
+                                    <button id="neu-dark-toggle" class="px-4 py-2 rounded-lg bg-slate-800 text-xs font-mono text-white hover:bg-slate-700">Dark Mode Neu</button>
+                                    <button id="neu-light-toggle" class="px-4 py-2 rounded-lg bg-slate-200 text-xs font-mono text-slate-800 hover:bg-white">Light Mode Neu</button>
+                                </div>
+                            </div>
+
+                            <div id="neu-preview-container" class="p-8 rounded-2xl bg-[#18181b] flex items-center justify-center min-h-[280px] transition-colors duration-300">
+                                <div class="grid grid-cols-2 gap-6 w-full max-w-xs">
+                                    <div class="neu-dark p-6 rounded-2xl flex flex-col items-center justify-center text-slate-300 text-xs font-bold space-y-2 cursor-pointer hover:scale-105 transition-transform">
+                                        <i class="fa-solid fa-power-off text-indigo-400 text-xl"></i>
+                                        <span>Extruded</span>
+                                    </div>
+                                    <div class="neu-dark-inset p-6 rounded-2xl flex flex-col items-center justify-center text-indigo-400 text-xs font-bold space-y-2 cursor-pointer">
+                                        <i class="fa-solid fa-pressed text-purple-400 text-xl"></i>
+                                        <span>Inset Press</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. CYBERPUNK NEON TAB PANEL -->
+                    <div id="tab-cyber" class="style-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            <div class="space-y-4">
+                                <span class="px-3 py-1 rounded-full text-xs font-mono bg-cyber-pink/10 text-cyber-pink border border-cyber-pink/30">Cyberpunk Aesthetic</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">High Contrast & Neon Glows</h3>
+                                <p class="text-slate-400 leading-relaxed text-sm sm:text-base">
+                                    Futuristic UI inspired by retro-futurism, HUD displays, vivid cyan/magenta electric palettes, sharp clipped angles, and intense box drop-shadow glows.
+                                </p>
+                            </div>
+
+                            <div class="p-8 rounded-2xl bg-black border border-slate-800 flex items-center justify-center min-h-[280px]">
+                                <div class="cyber-border p-6 rounded-xl max-w-xs w-full text-center space-y-4">
+                                    <div class="text-xs font-mono text-cyber-cyan tracking-widest uppercase font-bold">// SYSTEM ONLINE</div>
+                                    <h4 class="text-xl font-black text-white tracking-wider uppercase" style="text-shadow: 0 0 10px #00f3ff">NEON TERMINAL</h4>
+                                    <button class="w-full py-2.5 bg-cyber-pink text-black font-black uppercase tracking-widest rounded text-xs hover:bg-cyber-cyan hover:shadow-[0_0_15px_#00f3ff] transition-all duration-300">
+                                        Execute CSS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. BENTO GRID TAB PANEL -->
+                    <div id="tab-bento" class="style-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            <div class="space-y-4">
+                                <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Bento Layout Grid</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Modular Asymmetric Cards</h3>
+                                <p class="text-slate-400 leading-relaxed text-sm sm:text-base">
+                                    Popularized by modern device landing pages, Bento grids group distinct features into compact, beautifully proportioned rounded grid cells (`grid-cols` with `col-span-2` & custom row spans).
+                                </p>
+                            </div>
+
+                            <div class="p-4 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800 grid grid-cols-3 gap-3 min-h-[280px]">
+                                <div class="col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                                    <i class="fa-solid fa-chart-line text-indigo-400"></i>
+                                    <span class="text-xs text-white font-semibold">Span 2 Grid Unit</span>
+                                </div>
+                                <div class="bg-gradient-to-b from-indigo-600 to-purple-600 rounded-xl p-4 text-white flex flex-col justify-between">
+                                    <i class="fa-solid fa-bolt text-amber-300"></i>
+                                    <span class="text-[10px] font-bold">Accent Unit</span>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                                    <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                                    <span class="text-[10px] text-slate-300">Security</span>
+                                </div>
+                                <div class="col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                                    <span class="text-xs text-slate-300 font-medium">Bento Bottom Bar</span>
+                                    <i class="fa-solid fa-arrow-right text-xs text-indigo-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. CLAYMORPHISM TAB PANEL -->
+                    <div id="tab-clay" class="style-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            <div class="space-y-4">
+                                <span class="px-3 py-1 rounded-full text-xs font-mono bg-pink-500/10 text-pink-400 border border-pink-500/20">Claymorphism Aesthetics</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Soft Playful 3D Volumes</h3>
+                                <p class="text-slate-400 leading-relaxed text-sm sm:text-base">
+                                    Combines rounded corners (`border-radius: 20px+`) with inner lighting shadows (`inset -6px -6px`) and smooth outer gradient drops to simulate soft clay-like tactile 3D objects.
+                                </p>
+                            </div>
+
+                            <div class="p-8 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center min-h-[280px]">
+                                <div class="clay-card p-6 text-white max-w-xs w-full text-center hover:scale-105 transition-transform duration-300 cursor-pointer">
+                                    <div class="w-12 h-12 rounded-2xl bg-white/20 mx-auto flex items-center justify-center mb-3 shadow-inner">
+                                        <i class="fa-solid fa-heart text-white text-xl"></i>
+                                    </div>
+                                    <h4 class="font-extrabold text-xl mb-1">Soft Clay Card</h4>
+                                    <p class="text-xs text-purple-100 opacity-90">Friendly, tactile, and volumetric UI aesthetic.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: INTERACTIVE CSS GENERATORS -->
+        <section id="generators" class="py-20 border-b border-slate-800/60 bg-slate-950/50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold mb-2" data-i18n="gen_tag">Realtime Tools</h2>
+                    <p class="text-3xl sm:text-4xl font-extrabold text-white" data-i18n="gen_heading">Interactive CSS Generators</p>
+                    <p class="text-slate-400 mt-3 text-base" data-i18n="gen_sub">
+                        Customize parameters visually and copy production-ready CSS code instantly.
+                    </p>
+                </div>
+
+                <!-- Generator Selector Tabs -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+                    <button data-gen="gen-glass" class="gen-tab-btn active p-3 rounded-xl border border-indigo-500/50 bg-indigo-600/20 text-indigo-300 font-semibold text-xs sm:text-sm text-center transition-all flex flex-col items-center justify-center space-y-1">
+                        <i class="fa-solid fa-glass-water text-lg"></i>
+                        <span>Glassmorphism</span>
+                    </button>
+                    <button data-gen="gen-shadow" class="gen-tab-btn p-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 font-semibold text-xs sm:text-sm text-center hover:bg-slate-800 transition-all flex flex-col items-center justify-center space-y-1">
+                        <i class="fa-solid fa-box-shadow text-lg"></i>
+                        <span>Box Shadow & Glow</span>
+                    </button>
+                    <button data-gen="gen-gradient" class="gen-tab-btn p-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 font-semibold text-xs sm:text-sm text-center hover:bg-slate-800 transition-all flex flex-col items-center justify-center space-y-1">
+                        <i class="fa-solid fa-palette text-lg"></i>
+                        <span>Mesh Gradient</span>
+                    </button>
+                    <button data-gen="gen-clamp" class="gen-tab-btn p-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 font-semibold text-xs sm:text-sm text-center hover:bg-slate-800 transition-all flex flex-col items-center justify-center space-y-1">
+                        <i class="fa-solid fa-text-height text-lg"></i>
+                        <span>Fluid clamp()</span>
+                    </button>
+                    <button data-gen="gen-anim" class="gen-tab-btn p-3 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 font-semibold text-xs sm:text-sm text-center hover:bg-slate-800 transition-all flex flex-col items-center justify-center space-y-1 col-span-2 sm:col-span-1">
+                        <i class="fa-solid fa-film text-lg"></i>
+                        <span>CSS Keyframes</span>
+                    </button>
+                </div>
+
+                <!-- GENERATOR DISPLAY PANELS -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 lg:p-8 shadow-2xl">
+                    
+                    <!-- 1. GLASSMORPHISM GENERATOR -->
+                    <div id="gen-glass" class="gen-panel block">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <!-- Controls Panel -->
+                            <div class="lg:col-span-5 space-y-5">
+                                <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">
+                                    <span>Glass Controls</span>
+                                    <button id="reset-glass" class="text-xs text-indigo-400 hover:underline font-normal">Reset</button>
+                                </h3>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Backdrop Blur</label>
+                                        <span id="val-glass-blur" class="font-mono text-indigo-400">16px</span>
+                                    </div>
+                                    <input type="range" id="glass-blur" min="0" max="40" value="16" class="w-full">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Background Opacity</label>
+                                        <span id="val-glass-opacity" class="font-mono text-indigo-400">0.10</span>
+                                    </div>
+                                    <input type="range" id="glass-opacity" min="0" max="1" step="0.05" value="0.1" class="w-full">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Border Opacity</label>
+                                        <span id="val-glass-border-op" class="font-mono text-indigo-400">0.20</span>
+                                    </div>
+                                    <input type="range" id="glass-border-op" min="0" max="1" step="0.05" value="0.2" class="w-full">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Border Radius</label>
+                                        <span id="val-glass-radius" class="font-mono text-indigo-400">24px</span>
+                                    </div>
+                                    <input type="range" id="glass-radius" min="0" max="50" value="24" class="w-full">
+                                </div>
+
+                                <!-- Color picker options -->
+                                <div class="pt-2">
+                                    <label class="block text-xs text-slate-300 mb-2">Glass Color Tint</label>
+                                    <div class="flex space-x-3">
+                                        <button data-tint="255, 255, 255" class="glass-tint-btn w-7 h-7 rounded-full bg-white border-2 border-indigo-500"></button>
+                                        <button data-tint="99, 102, 241" class="glass-tint-btn w-7 h-7 rounded-full bg-indigo-500 border-2 border-transparent"></button>
+                                        <button data-tint="236, 72, 153" class="glass-tint-btn w-7 h-7 rounded-full bg-pink-500 border-2 border-transparent"></button>
+                                        <button data-tint="16, 185, 129" class="glass-tint-btn w-7 h-7 rounded-full bg-emerald-500 border-2 border-transparent"></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live Preview & Code Panel -->
+                            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                                <div class="relative w-full h-64 sm:h-72 rounded-2xl overflow-hidden flex items-center justify-center p-6" style="background: linear-gradient(135deg, #1e1b4b, #4338ca, #831843);">
+                                    <!-- Background Blobs -->
+                                    <div class="absolute w-40 h-40 rounded-full bg-cyan-400/80 blur-2xl top-2 left-4"></div>
+                                    <div class="absolute w-40 h-40 rounded-full bg-pink-500/80 blur-2xl bottom-2 right-4"></div>
+                                    
+                                    <!-- Dynamic Preview Target Element -->
+                                    <div id="glass-target" class="w-full max-w-sm p-6 text-white text-center shadow-2xl relative z-10 transition-all">
+                                        <i class="fa-solid fa-sparkles text-2xl mb-2 text-indigo-200"></i>
+                                        <h4 class="font-bold text-lg mb-1">Live Glass Preview</h4>
+                                        <p class="text-xs text-slate-200 opacity-90">Adjust controls on the left to see live changes.</p>
+                                    </div>
+                                </div>
+
+                                <!-- CSS Code Block Output -->
+                                <div class="relative bg-slate-950 rounded-2xl p-4 border border-slate-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs font-mono text-slate-400 uppercase">Generated CSS Code</span>
+                                        <button id="copy-glass-code" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-all flex items-center space-x-1">
+                                            <i class="fa-solid fa-copy"></i>
+                                            <span>Copy CSS</span>
+                                        </button>
+                                    </div>
+                                    <pre id="glass-code-out" class="font-mono text-xs text-indigo-300 overflow-x-auto p-2 bg-slate-900/60 rounded-xl leading-relaxed"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. BOX SHADOW & GLOW GENERATOR -->
+                    <div id="gen-shadow" class="gen-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-5 space-y-5">
+                                <h3 class="text-lg font-bold text-white mb-4">Shadow & Glow Controls</h3>
+                                
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Offset X</label>
+                                        <span id="val-sh-x" class="font-mono text-indigo-400">0px</span>
+                                    </div>
+                                    <input type="range" id="sh-x" min="-50" max="50" value="0" class="w-full">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Offset Y</label>
+                                        <span id="val-sh-y" class="font-mono text-indigo-400">10px</span>
+                                    </div>
+                                    <input type="range" id="sh-y" min="-50" max="50" value="10" class="w-full">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Blur Radius</label>
+                                        <span id="val-sh-blur" class="font-mono text-indigo-400">25px</span>
+                                    </div>
+                                    <input type="range" id="sh-blur" min="0" max="100" value="25" class="w-full">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Spread Radius</label>
+                                        <span id="val-sh-spread" class="font-mono text-indigo-400">-5px</span>
+                                    </div>
+                                    <input type="range" id="sh-spread" min="-30" max="50" value="-5" class="w-full">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs text-slate-300 mb-1">Shadow Color</label>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="color" id="sh-color" value="#6366f1" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border border-slate-700">
+                                        <span id="sh-color-hex" class="text-xs font-mono text-slate-400">#6366f1</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                                <div class="w-full h-64 sm:h-72 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-6">
+                                    <div id="shadow-target" class="w-48 h-32 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col items-center justify-center text-white text-xs font-bold transition-all">
+                                        <span>Glow Target</span>
+                                    </div>
+                                </div>
+
+                                <div class="relative bg-slate-950 rounded-2xl p-4 border border-slate-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs font-mono text-slate-400 uppercase">Generated Box-Shadow</span>
+                                        <button id="copy-shadow-code" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-all flex items-center space-x-1">
+                                            <i class="fa-solid fa-copy"></i>
+                                            <span>Copy CSS</span>
+                                        </button>
+                                    </div>
+                                    <pre id="shadow-code-out" class="font-mono text-xs text-indigo-300 overflow-x-auto p-2 bg-slate-900/60 rounded-xl leading-relaxed"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. MESH & GRADIENT GENERATOR -->
+                    <div id="gen-gradient" class="gen-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-5 space-y-5">
+                                <h3 class="text-lg font-bold text-white mb-4">Gradient Controls</h3>
+                                
+                                <div>
+                                    <label class="block text-xs text-slate-300 mb-1">Preset Palettes</label>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button data-g1="#6366f1" data-g2="#a855f7" data-g3="#ec4899" class="grad-preset h-8 rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 border border-white/20"></button>
+                                        <button data-g1="#06b6d4" data-g2="#3b82f6" data-g3="#6366f1" class="grad-preset h-8 rounded-lg bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 border border-white/20"></button>
+                                        <button data-g1="#10b981" data-g2="#06b6d4" data-g3="#3b82f6" class="grad-preset h-8 rounded-lg bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 border border-white/20"></button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Gradient Angle</label>
+                                        <span id="val-grad-angle" class="font-mono text-indigo-400">135deg</span>
+                                    </div>
+                                    <input type="range" id="grad-angle" min="0" max="360" value="135" class="w-full">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-slate-300 mb-1">Color Stop 1</label>
+                                        <input type="color" id="grad-c1" value="#6366f1" class="w-full h-10 rounded-lg bg-transparent cursor-pointer border border-slate-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-300 mb-1">Color Stop 2</label>
+                                        <input type="color" id="grad-c2" value="#a855f7" class="w-full h-10 rounded-lg bg-transparent cursor-pointer border border-slate-700">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                                <div id="grad-target" class="w-full h-64 sm:h-72 rounded-2xl flex items-center justify-center p-6 shadow-2xl transition-all">
+                                    <span class="text-white font-bold text-lg bg-black/30 backdrop-blur-md px-4 py-2 rounded-xl">Mesh Gradient Canvas</span>
+                                </div>
+
+                                <div class="relative bg-slate-950 rounded-2xl p-4 border border-slate-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs font-mono text-slate-400 uppercase">Generated Gradient Code</span>
+                                        <button id="copy-grad-code" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-all flex items-center space-x-1">
+                                            <i class="fa-solid fa-copy"></i>
+                                            <span>Copy CSS</span>
+                                        </button>
+                                    </div>
+                                    <pre id="grad-code-out" class="font-mono text-xs text-indigo-300 overflow-x-auto p-2 bg-slate-900/60 rounded-xl leading-relaxed"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. FLUID CLAMP TYPOGRAPHY -->
+                    <div id="gen-clamp" class="gen-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-5 space-y-4">
+                                <h3 class="text-lg font-bold text-white mb-2">Fluid clamp() Typography</h3>
+                                <p class="text-xs text-slate-400">Calculate responsive font sizes without media queries.</p>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-slate-300 mb-1">Min Size (px)</label>
+                                        <input type="number" id="clamp-min-size" value="16" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-300 mb-1">Max Size (px)</label>
+                                        <input type="number" id="clamp-max-size" value="36" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-300 mb-1">Min Viewport (px)</label>
+                                        <input type="number" id="clamp-min-vp" value="320" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-300 mb-1">Max Viewport (px)</label>
+                                        <input type="number" id="clamp-max-vp" value="1200" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                                <div class="w-full h-64 sm:h-72 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-6 text-center">
+                                    <p id="clamp-target" class="font-extrabold text-white transition-all">
+                                        Responsive Text
+                                    </p>
+                                </div>
+
+                                <div class="relative bg-slate-950 rounded-2xl p-4 border border-slate-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs font-mono text-slate-400 uppercase">Generated CSS clamp()</span>
+                                        <button id="copy-clamp-code" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-all flex items-center space-x-1">
+                                            <i class="fa-solid fa-copy"></i>
+                                            <span>Copy CSS</span>
+                                        </button>
+                                    </div>
+                                    <pre id="clamp-code-out" class="font-mono text-xs text-indigo-300 overflow-x-auto p-2 bg-slate-900/60 rounded-xl leading-relaxed"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. CSS KEYFRAME ANIMATION STUDIO -->
+                    <div id="gen-anim" class="gen-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-5 space-y-4">
+                                <h3 class="text-lg font-bold text-white mb-2">Animation Keyframes</h3>
+                                
+                                <div>
+                                    <label class="block text-xs text-slate-300 mb-2">Preset Keyframe Effects</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button data-anim="pulse" class="anim-preset-btn px-3 py-2 rounded-lg bg-slate-950 border border-indigo-500/50 text-xs text-indigo-300">Pulse Glow</button>
+                                        <button data-anim="float" class="anim-preset-btn px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-400">Float</button>
+                                        <button data-anim="shake" class="anim-preset-btn px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-400">Shake / Jitter</button>
+                                        <button data-anim="spin" class="anim-preset-btn px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-400">Smooth Spin</button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                        <label>Duration (s)</label>
+                                        <span id="val-anim-duration" class="font-mono text-indigo-400">2s</span>
+                                    </div>
+                                    <input type="range" id="anim-duration" min="0.5" max="5" step="0.5" value="2" class="w-full">
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                                <div class="w-full h-64 sm:h-72 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-6 overflow-hidden">
+                                    <div id="anim-target" class="w-24 h-24 rounded-2xl bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-xl">
+                                        <i class="fa-solid fa-atom"></i>
+                                    </div>
+                                </div>
+
+                                <div class="relative bg-slate-950 rounded-2xl p-4 border border-slate-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs font-mono text-slate-400 uppercase">Keyframe Code</span>
+                                        <button id="copy-anim-code" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-all flex items-center space-x-1">
+                                            <i class="fa-solid fa-copy"></i>
+                                            <span>Copy CSS</span>
+                                        </button>
+                                    </div>
+                                    <pre id="anim-code-out" class="font-mono text-xs text-indigo-300 overflow-x-auto p-2 bg-slate-900/60 rounded-xl leading-relaxed"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 3: UI COMPONENT SPECIMEN LIBRARY -->
+        <section id="uikit" class="py-20 border-b border-slate-800/60">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold mb-2" data-i18n="ui_tag">Production Component Specimen</h2>
+                    <p class="text-3xl sm:text-4xl font-extrabold text-white" data-i18n="ui_heading">Interactive UI Components</p>
+                    <p class="text-slate-400 mt-3 text-base" data-i18n="ui_sub">
+                        Buttons, inputs, micro-interactions, and badges styled with cutting-edge CSS techniques.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Component 1: Glow Buttons -->
+                    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 flex flex-col justify-between space-y-6">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-white text-base">Glow & Gradient Buttons</h3>
+                                <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Buttons</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-6">Interactive button states with hover ambient light diffusion.</p>
+                            
+                            <div class="space-y-4">
+                                <button class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold text-xs shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-95 transition-all">
+                                    Ambient Glow Button
+                                </button>
+
+                                <button class="w-full py-3 px-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 font-semibold text-xs hover:border-indigo-500 hover:text-indigo-300 transition-all">
+                                    Border Accent Button
+                                </button>
+
+                                <button class="w-full py-3 px-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-semibold text-xs hover:bg-white/20 transition-all">
+                                    Translucent Glass Button
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component 2: Inputs & Selects -->
+                    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 flex flex-col justify-between space-y-6">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-white text-base">Interactive Inputs</h3>
+                                <span class="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">Forms</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-6">Input elements featuring glowing focus indicators.</p>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-300 mb-1">Email Address</label>
+                                    <input type="email" placeholder="alex@auracss.io" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition-all">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-300 mb-1">Select Theme</label>
+                                    <select class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all">
+                                        <option>Dark Synthwave</option>
+                                        <option>Cyberpunk Neon</option>
+                                        <option>Glassmorphic Frosted</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component 3: Shimmer Loaders & Badges -->
+                    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 flex flex-col justify-between space-y-6">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-white text-base">Loaders & Status Badges</h3>
+                                <span class="text-[10px] font-mono text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded">Feedback</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-6">Skeleton shimmers and vibrant status indicators.</p>
+                            
+                            <!-- Badges -->
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                    <span>Live System</span>
+                                </span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                    v2.4 Active
+                                </span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                                    Beta Access
+                                </span>
+                            </div>
+
+                            <!-- Skeleton Shimmer -->
+                            <div class="space-y-2">
+                                <p class="text-[11px] text-slate-400">Skeleton Loading State</p>
+                                <div class="shimmer-box h-4 rounded-lg w-3/4"></div>
+                                <div class="shimmer-box h-4 rounded-lg w-full"></div>
+                                <div class="shimmer-box h-4 rounded-lg w-1/2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: CSS VAULT & SNIPPETS -->
+        <section id="snippets" class="py-20 bg-slate-950">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold mb-2" data-i18n="vault_tag">Essential Code Snippets</h2>
+                    <p class="text-3xl sm:text-4xl font-extrabold text-white" data-i18n="vault_heading">CSS Vault & Helpers</p>
+                    <p class="text-slate-400 mt-3 text-base" data-i18n="vault_sub">
+                        Copy essential modern CSS layout and utility patterns with a single click.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Snippet 1: Smooth Center Flexbox/Grid -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-bullseye text-indigo-400"></i>
+                                <span>Absolute Center Grid</span>
+                            </h4>
+                            <button class="copy-snippet-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-indigo-300 transition-all">
+                                Copy Snippet
+                            </button>
+                        </div>
+                        <pre class="bg-slate-950 p-3 rounded-xl font-mono text-xs text-slate-300 border border-slate-800/80 overflow-x-auto">
+.center-box {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}</pre>
+                    </div>
+
+                    <!-- Snippet 2: Gradient Text -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-font text-pink-400"></i>
+                                <span>Gradient Clip Text</span>
+                            </h4>
+                            <button class="copy-snippet-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-indigo-300 transition-all">
+                                Copy Snippet
+                            </button>
+                        </div>
+                        <pre class="bg-slate-950 p-3 rounded-xl font-mono text-xs text-slate-300 border border-slate-800/80 overflow-x-auto">
+.gradient-text {
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}</pre>
+                    </div>
+
+                    <!-- Snippet 3: Custom Scrollbar Styling -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-[#00f3ff] fa-bars-staggered text-cyan-400"></i>
+                                <span>Custom Scrollbar</span>
+                            </h4>
+                            <button class="copy-snippet-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-indigo-300 transition-all">
+                                Copy Snippet
+                            </button>
+                        </div>
+                        <pre class="bg-slate-950 p-3 rounded-xl font-mono text-xs text-slate-300 border border-slate-800/80 overflow-x-auto">
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}</pre>
+                    </div>
+
+                    <!-- Snippet 4: Truncate Multi-line Text -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-ellipsis text-emerald-400"></i>
+                                <span>Multi-line Text Clamp</span>
+                            </h4>
+                            <button class="copy-snippet-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-indigo-300 transition-all">
+                                Copy Snippet
+                            </button>
+                        </div>
+                        <pre class="bg-slate-950 p-3 rounded-xl font-mono text-xs text-slate-300 border border-slate-800/80 overflow-x-auto">
+.truncate-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}</pre>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-12 text-slate-400 text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+                <span class="font-bold text-white">Aura CSS Studio</span>
+                <span>— Modern Interactive Web CSS Design</span>
+            </div>
+            <div class="flex items-center space-x-6 text-slate-400">
+                <a href="#hero" class="hover:text-white transition-colors">Back to top</a>
+                <a href="#aesthetics" class="hover:text-white transition-colors">Styles</a>
+                <a href="#generators" class="hover:text-white transition-colors">Generators</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 flex items-center space-x-3 px-4 py-3 rounded-2xl bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 border border-indigo-400/30 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-emerald-300 text-lg"></i>
+        <div>
+            <p class="font-bold text-xs" id="toast-title">CSS Code Copied!</p>
+            <p class="text-[10px] text-indigo-100" id="toast-desc">Pasted to clipboard successfully.</p>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        const i18nData = {
+            en: {
+                nav_home: "Home",
+                nav_styles: "Design Styles",
+                nav_generators: "CSS Generators",
+                nav_uikit: "UI Components",
+                nav_vault: "CSS Vault",
+                btn_open_gen: "Open Generator",
+                hero_badge: "Explore Modern CSS & Layout Architecture",
+                hero_title_1: "Craft Breathtaking",
+                hero_title_2: "User Experiences",
+                hero_title_3: "With CSS.",
+                hero_desc: "A curated design system, aesthetic style explorer, and suite of interactive generators. Master Glassmorphism, Neumorphism, Cyberpunk Neon, Bento Grids, and modern fluid styling.",
+                btn_try_gen: "Try Interactive Generators",
+                btn_browse_ui: "Browse UI Kit",
+                stat_trends: "Design Trends",
+                stat_gens: "CSS Generators",
+                stat_pure: "Pure CSS/HTML",
+                styles_tag: "Visual Spectrum",
+                styles_heading: "Modern CSS Design Styles",
+                styles_sub: "Explore the foundational modern design paradigms used in high-end web applications today.",
+                gen_tag: "Realtime Tools",
+                gen_heading: "Interactive CSS Generators",
+                gen_sub: "Customize parameters visually and copy production-ready CSS code instantly.",
+                ui_tag: "Production Component Specimen",
+                ui_heading: "Interactive UI Components",
+                ui_sub: "Buttons, inputs, micro-interactions, and badges styled with cutting-edge CSS techniques.",
+                vault_tag: "Essential Code Snippets",
+                vault_heading: "CSS Vault & Helpers",
+                vault_sub: "Copy essential modern CSS layout and utility patterns with a single click.",
+                toast_copied: "CSS Code Copied!",
+                toast_desc: "Pasted to clipboard successfully."
+            },
+            id: {
+                nav_home: "Beranda",
+                nav_styles: "Gaya Desain",
+                nav_generators: "Generator CSS",
+                nav_uikit: "Komponen UI",
+                nav_vault: "Brankas CSS",
+                btn_open_gen: "Buka Generator",
+                hero_badge: "Jelajahi Arsitektur Tata Letak & CSS Modern",
+                hero_title_1: "Ciptakan Pengalaman",
+                hero_title_2: "Pengguna Memukau",
+                hero_title_3: "Dengan CSS.",
+                hero_desc: "Sistem desain terkurasi, penjelajah gaya estetika, dan rangkaian generator interaktif. Kuasai Glassmorphism, Neumorphism, Cyberpunk Neon, Bento Grid, dan gaya fluid modern.",
+                btn_try_gen: "Coba Generator Interaktif",
+                btn_browse_ui: "Jelajahi UI Kit",
+                stat_trends: "Tren Desain",
+                stat_gens: "Generator CSS",
+                stat_pure: "Murni CSS/HTML",
+                styles_tag: "Spektrum Visual",
+                styles_heading: "Gaya Desain CSS Modern",
+                styles_sub: "Jelajahi paradigma desain modern utama yang digunakan dalam aplikasi web modern saat ini.",
+                gen_tag: "Alat Real-time",
+                gen_heading: "Generator CSS Interaktif",
+                gen_sub: "Sesuaikan parameter secara visual dan salin kode CSS siap pakai secara instan.",
+                ui_tag: "Spesimen Komponen Produksi",
+                ui_heading: "Komponen UI Interaktif",
+                ui_sub: "Tombol, input, mikro-interaksi, dan lencana yang dirancang dengan teknik CSS terkini.",
+                vault_tag: "Snippet Kode Penting",
+                vault_heading: "Brankas CSS & Pembantu",
+                vault_sub: "Salin pola tata letak dan utilitas CSS modern penting dengan sekali klik.",
+                toast_copied: "Kode CSS Tersalin!",
+                toast_desc: "Berhasil disalin ke papan klip."
+            }
+        };
+
+        let currentLang = 'en';
+
+        function updateLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('lang-label').textContent = lang.toUpperCase();
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18nData[lang] && i18nData[lang][key]) {
+                    el.textContent = i18nData[lang][key];
+                }
+            });
+        }
+
+        document.getElementById('lang-toggle-btn')?.addEventListener('click', () => {
+            const nextLang = currentLang === 'en' ? 'id' : 'en';
+            updateLanguage(nextLang);
+            showToast(nextLang === 'en' ? 'Language Changed' : 'Bahasa Diubah', nextLang === 'en' ? 'Switched to English' : 'Beralih ke Bahasa Indonesia');
+        });
+
+        function showToast(title, desc) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').textContent = title || i18nData[currentLang].toast_copied;
+            document.getElementById('toast-desc').textContent = desc || i18nData[currentLang].toast_desc;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast(i18nData[currentLang].toast_copied, i18nData[currentLang].toast_desc);
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        const heroCard = document.getElementById('hero-card-container');
+        if (heroCard) {
+            heroCard.addEventListener('mousemove', (e) => {
+                const rect = heroCard.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -12;
+                const rotateY = ((x - centerX) / centerX) * 12;
+
+                heroCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            });
+
+            heroCard.addEventListener('mouseleave', () => {
+                heroCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+            });
+        }
+
+        const styleTabs = document.querySelectorAll('.style-tab-btn');
+        const stylePanels = document.querySelectorAll('.style-panel');
+
+        styleTabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+
+                styleTabs.forEach(t => {
+                    t.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-600/30');
+                    t.classList.add('bg-slate-900', 'border', 'border-slate-800', 'text-slate-400');
+                });
+
+                btn.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-600/30');
+                btn.classList.remove('bg-slate-900', 'border', 'border-slate-800', 'text-slate-400');
+
+                stylePanels.forEach(p => {
+                    if (p.id === targetTab) {
+                        p.classList.remove('hidden');
+                        p.classList.add('block');
+                    } else {
+                        p.classList.add('hidden');
+                        p.classList.remove('block');
+                    }
+                });
+            });
+        });
+
+        const neuDarkBtn = document.getElementById('neu-dark-toggle');
+        const neuLightBtn = document.getElementById('neu-light-toggle');
+        const neuContainer = document.getElementById('neu-preview-container');
+
+        if (neuDarkBtn && neuLightBtn && neuContainer) {
+            neuDarkBtn.addEventListener('click', () => {
+                neuContainer.className = 'p-8 rounded-2xl bg-[#18181b] flex items-center justify-center min-h-[280px] transition-colors duration-300';
+            });
+            neuLightBtn.addEventListener('click', () => {
+                neuContainer.className = 'p-8 rounded-2xl bg-[#e2e8f0] flex items-center justify-center min-h-[280px] transition-colors duration-300';
+            });
+        }
+
+        const genTabs = document.querySelectorAll('.gen-tab-btn');
+        const genPanels = document.querySelectorAll('.gen-panel');
+
+        genTabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetGen = btn.getAttribute('data-gen');
+
+                genTabs.forEach(t => {
+                    t.classList.remove('active', 'border-indigo-500/50', 'bg-indigo-600/20', 'text-indigo-300');
+                    t.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+                });
+
+                btn.classList.add('active', 'border-indigo-500/50', 'bg-indigo-600/20', 'text-indigo-300');
+                btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+
+                genPanels.forEach(p => {
+                    if (p.id === targetGen) {
+                        p.classList.remove('hidden');
+                        p.classList.add('block');
+                    } else {
+                        p.classList.add('hidden');
+                        p.classList.remove('block');
+                    }
+                });
+            });
+        });
+
+        let glassState = {
+            blur: 16,
+            opacity: 0.1,
+            borderOp: 0.2,
+            radius: 24,
+            rgb: '255, 255, 255'
+        };
+
+        function updateGlass() {
+            const target = document.getElementById('glass-target');
+            const codeOut = document.getElementById('glass-code-out');
+
+            if (!target || !codeOut) return;
+
+            const css = `background: rgba(${glassState.rgb}, ${glassState.opacity});
+backdrop-filter: blur(${glassState.blur}px);
+-webkit-backdrop-filter: blur(${glassState.blur}px);
+border: 1px solid rgba(${glassState.rgb}, ${glassState.borderOp});
+border-radius: ${glassState.radius}px;`;
+
+            target.style.background = `rgba(${glassState.rgb}, ${glassState.opacity})`;
+            target.style.backdropFilter = `blur(${glassState.blur}px)`;
+            target.style.webkitBackdropFilter = `blur(${glassState.blur}px)`;
+            target.style.border = `1px solid rgba(${glassState.rgb}, ${glassState.borderOp})`;
+            target.style.borderRadius = `${glassState.radius}px`;
+
+            codeOut.textContent = css;
+        }
+
+        // Glass Event Listeners
+        document.getElementById('glass-blur')?.addEventListener('input', (e) => {
+            glassState.blur = e.target.value;
+            document.getElementById('val-glass-blur').textContent = e.target.value + 'px';
+            updateGlass();
+        });
+        document.getElementById('glass-opacity')?.addEventListener('input', (e) => {
+            glassState.opacity = e.target.value;
+            document.getElementById('val-glass-opacity').textContent = e.target.value;
+            updateGlass();
+        });
+        document.getElementById('glass-border-op')?.addEventListener('input', (e) => {
+            glassState.borderOp = e.target.value;
+            document.getElementById('val-glass-border-op').textContent = e.target.value;
+            updateGlass();
+        });
+        document.getElementById('glass-radius')?.addEventListener('input', (e) => {
+            glassState.radius = e.target.value;
+            document.getElementById('val-glass-radius').textContent = e.target.value + 'px';
+            updateGlass();
+        });
+
+        document.querySelectorAll('.glass-tint-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                glassState.rgb = btn.getAttribute('data-tint');
+                updateGlass();
+            });
+        });
+
+        document.getElementById('copy-glass-code')?.addEventListener('click', () => {
+            const code = document.getElementById('glass-code-out').textContent;
+            copyToClipboard(code);
+        });
+
+        function updateShadow() {
+            const x = document.getElementById('sh-x').value;
+            const y = document.getElementById('sh-y').value;
+            const blur = document.getElementById('sh-blur').value;
+            const spread = document.getElementById('sh-spread').value;
+            const color = document.getElementById('sh-color').value;
+
+            document.getElementById('val-sh-x').textContent = x + 'px';
+            document.getElementById('val-sh-y').textContent = y + 'px';
+            document.getElementById('val-sh-blur').textContent = blur + 'px';
+            document.getElementById('val-sh-spread').textContent = spread + 'px';
+            document.getElementById('sh-color-hex').textContent = color;
+
+            const target = document.getElementById('shadow-target');
+            const codeOut = document.getElementById('shadow-code-out');
+
+            const shadowCss = `box-shadow: ${x}px ${y}px ${blur}px ${spread}px ${color};`;
+            target.style.boxShadow = `${x}px ${y}px ${blur}px ${spread}px ${color}`;
+            codeOut.textContent = shadowCss;
+        }
+
+        ['sh-x', 'sh-y', 'sh-blur', 'sh-spread', 'sh-color'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', updateShadow);
+        });
+
+        document.getElementById('copy-shadow-code')?.addEventListener('click', () => {
+            copyToClipboard(document.getElementById('shadow-code-out').textContent);
+        });
+
+        function updateGradient() {
+            const angle = document.getElementById('grad-angle').value;
+            const c1 = document.getElementById('grad-c1').value;
+            const c2 = document.getElementById('grad-c2').value;
+
+            document.getElementById('val-grad-angle').textContent = angle + 'deg';
+
+            const target = document.getElementById('grad-target');
+            const codeOut = document.getElementById('grad-code-out');
+
+            const css = `background: linear-gradient(${angle}deg, ${c1}, ${c2});`;
+            target.style.background = `linear-gradient(${angle}deg, ${c1}, ${c2})`;
+            codeOut.textContent = css;
+        }
+
+        ['grad-angle', 'grad-c1', 'grad-c2'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', updateGradient);
+        });
+
+        document.querySelectorAll('.grad-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('grad-c1').value = btn.getAttribute('data-g1');
+                document.getElementById('grad-c2').value = btn.getAttribute('data-g2');
+                updateGradient();
+            });
+        });
+
+        document.getElementById('copy-grad-code')?.addEventListener('click', () => {
+            copyToClipboard(document.getElementById('grad-code-out').textContent);
+        });
+
+        function updateClamp() {
+            const minSize = parseFloat(document.getElementById('clamp-min-size').value) || 16;
+            const maxSize = parseFloat(document.getElementById('clamp-max-size').value) || 36;
+            const minVp = parseFloat(document.getElementById('clamp-min-vp').value) || 320;
+            const maxVp = parseFloat(document.getElementById('clamp-max-vp').value) || 1200;
+
+            const slope = (maxSize - minSize) / (maxVp - minVp);
+            const yAxisIntersection = -minVp * slope + minSize;
+            
+            const minRem = (minSize / 16).toFixed(3);
+            const maxRem = (maxSize / 16).toFixed(3);
+            const valVw = (slope * 100).toFixed(3);
+            const valRem = (yAxisIntersection / 16).toFixed(3);
+
+            const clampCss = `font-size: clamp(${minRem}rem, ${valRem}rem + ${valVw}vw, ${maxRem}rem);`;
+
+            const target = document.getElementById('clamp-target');
+            const codeOut = document.getElementById('clamp-code-out');
+
+            target.style.fontSize = `clamp(${minRem}rem, ${valRem}rem + ${valVw}vw, ${maxRem}rem)`;
+            codeOut.textContent = clampCss;
+        }
+
+        ['clamp-min-size', 'clamp-max-size', 'clamp-min-vp', 'clamp-max-vp'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', updateClamp);
+        });
+
+        document.getElementById('copy-clamp-code')?.addEventListener('click', () => {
+            copyToClipboard(document.getElementById('clamp-code-out').textContent);
+        });
+
+        let currentAnimType = 'pulse';
+
+        function updateAnimation() {
+            const duration = document.getElementById('anim-duration').value;
+            document.getElementById('val-anim-duration').textContent = duration + 's';
+
+            const target = document.getElementById('anim-target');
+            const codeOut = document.getElementById('anim-code-out');
+
+            let keyframes = '';
+            if (currentAnimType === 'pulse') {
+                keyframes = `@keyframes pulseGlow {\n  0%, 100% { transform: scale(1); opacity: 0.8; }\n  50% { transform: scale(1.1); opacity: 1; }\n}\n.element {\n  animation: pulseGlow ${duration}s ease-in-out infinite;\n}`;
+                target.style.animation = `pulseGlow ${duration}s ease-in-out infinite`;
+            } else if (currentAnimType === 'float') {
+                keyframes = `@keyframes floatAnim {\n  0%, 100% { transform: translateY(0px); }\n  50% { transform: translateY(-15px); }\n}\n.element {\n  animation: floatAnim ${duration}s ease-in-out infinite;\n}`;
+                target.style.animation = `floatAnim ${duration}s ease-in-out infinite`;
+            } else if (currentAnimType === 'shake') {
+                keyframes = `@keyframes shakeAnim {\n  0%, 100% { transform: translateX(0); }\n  20%, 60% { transform: translateX(-8px); }\n  40%, 80% { transform: translateX(8px); }\n}\n.element {\n  animation: shakeAnim ${duration}s linear infinite;\n}`;
+                target.style.animation = `shakeAnim ${duration}s linear infinite`;
+            } else if (currentAnimType === 'spin') {
+                keyframes = `@keyframes spinAnim {\n  from { transform: rotate(0deg); }\n  to { transform: rotate(360deg); }\n}\n.element {\n  animation: spinAnim ${duration}s linear infinite;\n}`;
+                target.style.animation = `spinAnim ${duration}s linear infinite`;
+            }
+
+            codeOut.textContent = keyframes;
+        }
+
+        document.querySelectorAll('.anim-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.anim-preset-btn').forEach(b => {
+                    b.classList.remove('border-indigo-500/50', 'text-indigo-300');
+                    b.classList.add('border-slate-800', 'text-slate-400');
+                });
+                btn.classList.add('border-indigo-500/50', 'text-indigo-300');
+                btn.classList.remove('border-slate-800', 'text-slate-400');
+
+                currentAnimType = btn.getAttribute('data-anim');
+                updateAnimation();
+            });
+        });
+
+        document.getElementById('anim-duration')?.addEventListener('input', updateAnimation);
+
+        document.getElementById('copy-anim-code')?.addEventListener('click', () => {
+            copyToClipboard(document.getElementById('anim-code-out').textContent);
+        });
+
+        document.querySelectorAll('.copy-snippet-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.target.closest('.bg-slate-900');
+                const code = card.querySelector('pre').textContent;
+                copyToClipboard(code);
+            });
+        });
+
+        const themeBtn = document.getElementById('theme-toggle-btn');
+        const themeIcon = document.getElementById('theme-icon');
+        const bodyRoot = document.getElementById('body-root');
+
+        let isDark = true;
+        themeBtn?.addEventListener('click', () => {
+            isDark = !isDark;
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                bodyRoot.classList.remove('bg-slate-100', 'text-slate-900');
+                bodyRoot.classList.add('bg-slate-950', 'text-slate-100');
+                themeIcon.className = 'fa-solid fa-moon text-indigo-400';
+            } else {
+                document.documentElement.classList.remove('dark');
+                bodyRoot.classList.remove('bg-slate-950', 'text-slate-100');
+                bodyRoot.classList.add('bg-slate-100', 'text-slate-900');
+                themeIcon.className = 'fa-solid fa-sun text-amber-400';
+            }
+        });
+
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileBtn?.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        /* Initial generator render call */
+        window.onload = function() {
+            updateGlass();
+            updateShadow();
+            updateGradient();
+            updateClamp();
+            updateAnimation();
+            updateLanguage('en');
+        };
+    </script>
+</body>
+</html>
