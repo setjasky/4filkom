@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLN & PDAM Utility Scanner - Separated Database System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tesseract OCR Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        pln: {
+                            light: '#00A3E0',
+                            DEFAULT: '#0077B6',
+                            dark: '#03045E',
+                            accent: '#FFB703'
+                        },
+                        pdam: {
+                            light: '#48CAE4',
+                            DEFAULT: '#0096C7',
+                            dark: '#023E8A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090D16;
+            color: #F8FAFC;
+        }
+        .phone-frame {
+            border: 12px solid #1E293B;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 163, 224, 0.15);
+        }
+        .roi-reticle {
+            border: 2px dashed #00F0FF;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2);
+            animation: pulse-border 2s infinite alternate;
+        }
+        @keyframes pulse-border {
+            0% { border-color: #00F0FF; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+            100% { border-color: #FFB703; box-shadow: 0 0 20px rgba(255, 183, 3, 0.6); }
+        }
+        .scan-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00F0FF, #FFB703, transparent);
+            animation: scan 1.8s ease-in-out infinite;
+        }
+        @keyframes scan {
+            0% { top: 10%; opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { top: 90%; opacity: 0.2; }
+        }
+        .glow-emerald {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+        }
+        .glow-amber {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
+
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-bolt-lightning text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-amber-400 bg-clip-text text-transparent">
+                        MeterScan AI <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono ml-2 font-semibold">Tri-DB Isolated</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Separated Employee, Password & Metered Data DB Architecture</p>
+                </div>
+            </div>
+
+            <!-- View Navigation Tabs -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
+                <button id="tab-demo" onclick="switchTab('demo')" class="px-3.5 py-2 rounded-lg bg-cyan-600 text-white font-semibold transition-all duration-200 shadow-md">
+                    <i class="fa-solid fa-mobile-screen mr-2"></i>Live Scanner
+                </button>
+                <button id="tab-db" onclick="switchTab('db')" class="px-3.5 py-2 rounded-lg text-slate-300 hover:text-white transition-all duration-200">
+                    <i class="fa-solid fa-database mr-2"></i>3-Way DB Architecture
+                </button>
+                <button id="tab-code" onclick="switchTab('code')" class="px-3.5 py-2 rounded-lg text-slate-300 hover:text-white transition-all duration-200">
+                    <i class="fa-solid fa-code mr-2"></i>Kotlin Architecture
+                </button>
+                <button id="tab-sandbox" onclick="switchTab('sandbox')" class="px-3.5 py-2 rounded-lg text-slate-300 hover:text-white transition-all duration-200">
+                    <i class="fa-solid fa-sliders mr-2"></i>OCR Debugger
+                </button>
+            </div>
+
+            <!-- User Auth Bar Widget -->
+            <div class="flex items-center space-x-3 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800">
+                <div id="user-avatar-badge" class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold font-mono text-xs">
+                    EMP
+                </div>
+                <div class="text-xs">
+                    <div id="nav-user-name" class="font-bold text-slate-200 truncate max-w-[130px]">Not Authenticated</div>
+                    <div id="nav-user-role" class="text-[10px] text-slate-400 font-mono">Logged Out</div>
+                </div>
+                <button id="auth-action-btn" onclick="toggleAuthModal()" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Login
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100">Utility Officer Portal</h2>
+                        <p class="text-xs text-slate-400">Separated Authentication Engine</p>
+                    </div>
+                </div>
+                <button onclick="closeAuthModalIfLoggedIn()" class="text-slate-400 hover:text-white text-sm p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- DB Separation Notice -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 mb-5 text-xs text-slate-300 space-y-1">
+                <div class="font-bold text-cyan-400 flex items-center">
+                    <i class="fa-solid fa-layer-group mr-2"></i> Isolated Tri-Database System Active
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Identity details in <code class="text-emerald-400 font-mono">tbl_employees</code>, secrets in <code class="text-amber-400 font-mono">tbl_passwords</code>, and readings saved in <code class="text-sky-400 font-mono">tbl_meter_readings</code>.
+                </p>
+            </div>
+
+            <!-- Login Form -->
+            <form onsubmit="handleEmployeeLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Employee ID (NIK/ID):</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-xs">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </span>
+                        <input type="text" id="login-emp-id" required placeholder="e.g. EMP-1001" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-cyan-500 transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Account Password:</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-xs">
+                            <i class="fa-solid fa-key"></i>
+                        </span>
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-cyan-500 transition-all">
+                    </div>
+                </div>
+
+                <div id="login-error-msg" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl flex items-center space-x-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="login-error-text">Invalid Employee ID or Password</span>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition-all flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Authenticate Officer</span>
+                </button>
+            </form>
+
+            <!-- Quick Demo Credentials Picker -->
+            <div class="mt-6 pt-4 border-t border-slate-800">
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">Instant Demo Login Presets:</span>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button onclick="fillDemoLogin('EMP-1001', 'pln_inspector_2026')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition-all group">
+                        <div class="text-[11px] font-bold text-cyan-400 group-hover:text-cyan-300">Budi Santoso</div>
+                        <div class="text-[10px] text-slate-400 font-mono">EMP-1001 (PLN)</div>
+                    </button>
+                    <button onclick="fillDemoLogin('EMP-1002', 'pdam_reader_2026')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 text-left transition-all group">
+                        <div class="text-[11px] font-bold text-blue-400 group-hover:text-blue-300">Siti Rahma</div>
+                        <div class="text-[10px] text-slate-400 font-mono">EMP-1002 (PDAM)</div>
+                    </button>
+                    <button onclick="fillDemoLogin('EMP-1003', 'super_admin_2026')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-left transition-all group">
+                        <div class="text-[11px] font-bold text-amber-400 group-hover:text-amber-300">Rahmat Hidayat</div>
+                        <div class="text-[10px] text-slate-400 font-mono">EMP-1003 (Supervisor)</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
+
+        <div id="section-demo" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Android Phone Frame Simulator -->
+            <div class="lg:col-span-5 flex flex-col items-center">
+                <div class="w-full max-w-[380px] phone-frame bg-slate-900 overflow-hidden relative border-slate-800 flex flex-col h-[740px]">
+                    
+                    <!-- Phone Status Bar -->
+                    <div class="bg-slate-900 px-6 py-2 flex justify-between items-center text-[10px] text-slate-400 select-none z-20">
+                        <span class="font-semibold text-slate-300">09:41</span>
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-signal"></i>
+                            <i class="fa-solid fa-wifi"></i>
+                            <i class="fa-solid fa-battery-full text-xs"></i>
+                        </div>
+                    </div>
+
+                    <!-- Android App Bar with Employee Badge -->
+                    <div class="bg-slate-800/90 border-b border-slate-700/50 px-4 py-3 flex items-center justify-between z-20">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs border border-cyan-500/30">
+                                OCR
+                            </div>
+                            <div>
+                                <h2 class="text-xs font-bold text-slate-100 uppercase tracking-wider" id="app-service-label">PLN Electricity Scanner</h2>
+                                <p class="text-[10px] text-emerald-400 font-mono truncate" id="phone-officer-tag">Officer: EMP-1001 (Budi)</p>
+                            </div>
+                        </div>
+
+                        <!-- Meter Type Selector Switch -->
+                        <div class="flex bg-slate-900 p-0.5 rounded-lg border border-slate-700">
+                            <button id="type-pln" onclick="setServiceType('PLN')" class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-cyan-600 text-white transition-all">
+                                PLN
+                            </button>
+                            <button id="type-pdam" onclick="setServiceType('PDAM')" class="px-2.5 py-1 text-[11px] font-bold rounded-md text-slate-400 hover:text-white transition-all">
+                                PDAM
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Guided 2-Step Scanning Workflow Bar -->
+                    <div class="bg-slate-950/90 px-3 py-2 border-b border-slate-800 z-20">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Scan Sequence:</span>
+                            <button onclick="resetScanSteps()" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Restart Sequence
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                            <button id="step-btn-1" onclick="setScanStep(1)" class="px-2 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold flex items-center justify-center space-x-1 transition-all">
+                                <span class="w-4 h-4 rounded-full bg-cyan-500 text-slate-950 text-[10px] flex items-center justify-center font-bold">1</span>
+                                <span class="truncate">Scan ID</span>
+                                <i id="step-1-check" class="fa-solid fa-circle-check text-emerald-400 ml-1 hidden"></i>
+                            </button>
+                            <button id="step-btn-2" onclick="setScanStep(2)" class="px-2 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 flex items-center justify-center space-x-1 transition-all opacity-60">
+                                <span class="w-4 h-4 rounded-full bg-slate-700 text-slate-300 text-[10px] flex items-center justify-center font-bold">2</span>
+                                <span class="truncate">Scan Stand</span>
+                                <i id="step-2-check" class="fa-solid fa-circle-check text-emerald-400 ml-1 hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Camera / Viewfinder Container -->
+                    <div class="relative flex-1 bg-black overflow-hidden flex flex-col justify-center items-center">
+                        <video id="webcam" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
+                        <canvas id="meter-canvas" class="absolute inset-0 w-full h-full object-cover"></canvas>
+                        
+                        <!-- ROI Focus Box -->
+                        <div id="roi-box" class="absolute w-[82%] h-28 rounded-xl roi-reticle z-10 flex flex-col justify-between p-2 pointer-events-none transition-all duration-300">
+                            <div class="flex justify-between text-[9px] font-mono text-cyan-300 font-bold uppercase tracking-wider bg-slate-950/80 px-2 py-1 rounded w-fit backdrop-blur-sm border border-cyan-500/30">
+                                <span id="roi-label"><i class="fa-solid fa-1 mr-1"></i>STEP 1: ALIGN CUSTOMER ID</span>
+                            </div>
+                            <div class="relative w-full h-full">
+                                <div class="scan-line absolute w-full"></div>
+                            </div>
+                            <div class="flex justify-between text-[9px] text-amber-400 font-mono text-right bg-slate-950/80 px-2 py-1 rounded ml-auto backdrop-blur-sm border border-amber-500/30">
+                                <span id="scan-status-indicator">READY FOR STEP 1</span>
+                            </div>
+                        </div>
+
+                        <!-- Helper Controls -->
+                        <div class="absolute top-3 inset-x-3 flex justify-between items-center z-10">
+                            <button onclick="toggleTorch()" id="torch-btn" class="w-8 h-8 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-amber-400 flex items-center justify-center backdrop-blur-sm text-xs">
+                                <i class="fa-solid fa-bolt"></i>
+                            </button>
+                            <div class="px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-700 text-[10px] text-slate-300 font-mono backdrop-blur-sm">
+                                Target: <span class="text-cyan-400 font-bold" id="roi-target-badge">Customer ID</span>
+                            </div>
+                        </div>
+
+                        <!-- Capture Action Trigger Bar -->
+                        <div class="absolute bottom-4 inset-x-4 flex items-center justify-between z-10 bg-slate-900/85 backdrop-blur-md p-2 rounded-2xl border border-slate-800 shadow-xl">
+                            <button onclick="useCamera()" class="p-2 text-slate-300 hover:text-cyan-400 flex flex-col items-center text-[10px]">
+                                <i class="fa-solid fa-camera text-base mb-0.5"></i> Live Cam
+                            </button>
+                            
+                            <button onclick="captureAndOCR()" id="capture-btn" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-amber-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/30 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2">
+                                <i class="fa-solid fa-camera-retro text-base"></i>
+                                <span id="capture-btn-text">SCAN STEP 1 (ID)</span>
+                            </button>
+
+                            <label class="p-2 text-slate-300 hover:text-cyan-400 flex flex-col items-center text-[10px] cursor-pointer">
+                                <i class="fa-solid fa-upload text-base mb-0.5"></i> Upload
+                                <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Preset Meter Pickers -->
+                    <div class="bg-slate-900 border-t border-slate-800 p-3 z-20">
+                        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Meter Samples:</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="loadPresetMeter('pln-digital')" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] border border-slate-700 text-slate-200 text-left truncate">
+                                <i class="fa-solid fa-calculator text-cyan-400 mr-1"></i> PLN Digital
+                            </button>
+                            <button onclick="loadPresetMeter('pln-analog')" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] border border-slate-700 text-slate-200 text-left truncate">
+                                <i class="fa-solid fa-gauge-high text-amber-400 mr-1"></i> PLN Analog
+                            </button>
+                            <button onclick="loadPresetMeter('pdam-water')" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] border border-slate-700 text-slate-200 text-left truncate">
+                                <i class="fa-solid fa-faucet-drip text-blue-400 mr-1"></i> PDAM Water
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Phone Footer Bar -->
+                    <div class="bg-slate-950 px-6 py-2 border-t border-slate-900 flex justify-center items-center z-20">
+                        <div class="w-28 h-1 bg-slate-700 rounded-full"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Main Extraction Result Card -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" id="badge-meter-type">
+                                PLN Electricity Meter
+                            </span>
+                            <h3 class="text-xl font-bold mt-2 text-slate-100">Meter Inspection Extractor</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block">OCR Confidence</span>
+                            <span class="text-lg font-mono font-bold text-emerald-400" id="ocr-confidence">98.4%</span>
+                        </div>
+                    </div>
+
+                    <!-- Input Data Block -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-slate-400 uppercase font-semibold block mb-1">
+                                    <i class="fa-solid fa-id-card text-cyan-400 mr-1"></i> Customer ID / Serial No:
+                                </label>
+                                <input type="text" id="extracted-idpel" value="541100234182" oninput="recalculateUsage()" class="w-full bg-slate-900 text-lg font-mono font-bold text-cyan-300 px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500 tracking-wider text-center">
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-slate-400 uppercase font-semibold block mb-1">
+                                    <i class="fa-solid fa-gauge-high text-amber-400 mr-1"></i> Stand Meter Reading:
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" id="extracted-digits" value="014925" oninput="recalculateUsage()" class="w-full bg-slate-900 text-lg font-mono font-bold text-amber-400 px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500 tracking-widest text-center">
+                                    <span class="text-sm font-semibold text-slate-400 min-w-[36px]" id="unit-label">kWh</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Officer Audit Tag -->
+                        <div class="pt-3 border-t border-slate-900 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-user-check text-emerald-400"></i>
+                                <span>Scanning Officer: <strong id="field-officer-name" class="text-slate-200">Budi Santoso</strong> (<span id="field-officer-id" class="font-mono text-cyan-400">EMP-1001</span>)</span>
+                            </div>
+                            <div id="ocr-loader" class="hidden flex items-center space-x-2 text-cyan-400 font-mono">
+                                <i class="fa-solid fa-circle-notch fa-spin text-lg"></i>
+                                <span>Processing...</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex justify-end">
+                            <button onclick="saveCurrentReading()" class="w-full md:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-500 hover:to-cyan-400 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center">
+                                <i class="fa-solid fa-database mr-2"></i> Commit Reading to tbl_meter_readings
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sanity Validation Check -->
+                    <div class="mt-4 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start space-x-3">
+                        <div class="text-amber-400 text-lg mt-0.5">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div class="text-xs space-y-1">
+                            <div class="font-bold text-slate-200" id="validation-title">Validation Check Passed</div>
+                            <div class="text-slate-400" id="validation-desc">
+                                Current reading (14,925 kWh) is higher than previous month (14,680 kWh). Usage delta: <strong class="text-emerald-400">+245 kWh</strong>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Estimator Widget -->
+                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Prev Reading</span>
+                            <span class="text-sm font-mono font-bold text-slate-200" id="val-prev-reading">14,680 kWh</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Current Usage</span>
+                            <span class="text-sm font-mono font-bold text-cyan-400" id="val-usage-delta">245 kWh</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 col-span-2 sm:col-span-1">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Est. Bill Tariff</span>
+                            <span class="text-sm font-mono font-bold text-amber-400" id="val-est-cost">Rp 353.951</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Log Table -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-clock-rotate-left mr-2 text-cyan-400"></i> Local Submission Stream (`tbl_meter_readings`)
+                        </h3>
+                        <button onclick="exportHistoryCSV()" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center">
+                            <i class="fa-solid fa-file-csv mr-1"></i> Export Metered CSV
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono text-[10px]">
+                                <tr>
+                                    <th class="py-2.5 px-3 rounded-l-lg">Reading ID / Time</th>
+                                    <th class="py-2.5 px-3">Officer</th>
+                                    <th class="py-2.5 px-3">Type</th>
+                                    <th class="py-2.5 px-3">Customer ID</th>
+                                    <th class="py-2.5 px-3">Reading</th>
+                                    <th class="py-2.5 px-3 rounded-r-lg text-right">Validation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-800/50">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="section-db" class="hidden space-y-6">
+            <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+                
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-database text-cyan-400 mr-3"></i> Tri-Layered Separated Database Architecture
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Fully isolated schema separating Employee Profiles (<code class="text-emerald-400 font-mono">tbl_employees</code>), Auth Passwords (<code class="text-amber-400 font-mono">tbl_passwords</code>), and Metered Utility Readings (<code class="text-sky-400 font-mono">tbl_meter_readings</code>).
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="openNewMeterReadingModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-xs font-bold shadow-md transition-all flex items-center">
+                            <i class="fa-solid fa-plus-circle mr-2"></i> Manual Meter Record
+                        </button>
+                        <button onclick="openNewEmpModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md transition-all flex items-center">
+                            <i class="fa-solid fa-user-plus mr-2"></i> Register Employee
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Database Architecture Visual Diagram -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    
+                    <!-- Employee Database Box -->
+                    <div class="bg-slate-900 p-4 rounded-xl border border-emerald-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold text-emerald-400 font-mono flex items-center">
+                                    <i class="fa-solid fa-address-book mr-1.5"></i> DB 1: tbl_employees
+                                </span>
+                                <span class="text-[10px] bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded font-mono">Public Profiles</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mb-3">Contains officer roster, departments, and active employment roles.</p>
+                        </div>
+                        <div class="text-[10px] font-mono bg-slate-950 p-2.5 rounded text-slate-300 space-y-1 border border-slate-800">
+                            <div class="text-cyan-400 font-bold">PRIMARY KEY: emp_id</div>
+                            <div>- full_name, email</div>
+                            <div>- department, utility_type</div>
+                            <div class="text-slate-500 text-[9px] mt-1 border-t border-slate-800 pt-1">FK target for auth & audit logs</div>
+                        </div>
+                    </div>
+
+                    <!-- Password Database Box -->
+                    <div class="bg-slate-900 p-4 rounded-xl border border-amber-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold text-amber-400 font-mono flex items-center">
+                                    <i class="fa-solid fa-key-skeleton mr-1.5"></i> DB 2: tbl_passwords
+                                </span>
+                                <span class="text-[10px] bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded font-mono">Restricted Vault</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mb-3">Strictly isolated database storing salts, SHA256 hashes, and security logs.</p>
+                        </div>
+                        <div class="text-[10px] font-mono bg-slate-950 p-2.5 rounded text-slate-300 space-y-1 border border-slate-800">
+                            <div class="text-amber-400 font-bold">FOREIGN KEY: emp_id -&gt; tbl_employees</div>
+                            <div>- password_hash (SHA-256)</div>
+                            <div>- salt, failed_attempts</div>
+                            <div class="text-slate-500 text-[9px] mt-1 border-t border-slate-800 pt-1">Zero access from metered services</div>
+                        </div>
+                    </div>
+
+                    <!-- Metered Data Database Box -->
+                    <div class="bg-slate-900 p-4 rounded-xl border border-sky-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold text-sky-400 font-mono flex items-center">
+                                    <i class="fa-solid fa-gauge-high mr-1.5"></i> DB 3: tbl_meter_readings
+                                </span>
+                                <span class="text-[10px] bg-sky-500/10 text-sky-300 px-2 py-0.5 rounded font-mono">Metered Data Storage</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mb-3">Isolated transactional database for field scan entries, consumption, and GPS telemetry.</p>
+                        </div>
+                        <div class="text-[10px] font-mono bg-slate-950 p-2.5 rounded text-slate-300 space-y-1 border border-slate-800">
+                            <div class="text-sky-400 font-bold">PRIMARY KEY: reading_id</div>
+                            <div class="text-emerald-400">FOREIGN KEY: officer_id -&gt; tbl_employees</div>
+                            <div>- customer_id, stand_reading, delta</div>
+                            <div>- est_cost, validation_status, anomaly_flag</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Database Metrics Bar -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Meter Readings</span>
+                        <span class="text-lg font-mono font-bold text-sky-400" id="stat-total-readings">0</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">PLN Volume Recorded</span>
+                        <span class="text-lg font-mono font-bold text-cyan-400" id="stat-pln-volume">0 kWh</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">PDAM Volume Recorded</span>
+                        <span class="text-lg font-mono font-bold text-blue-400" id="stat-pdam-volume">0 m³</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Flagged Anomaly Audit</span>
+                        <span class="text-lg font-mono font-bold text-amber-400" id="stat-anomaly-count">0 Records</span>
+                    </div>
+                </div>
+
+                <!-- Main Metered Data Database Table Section -->
+                <div class="bg-slate-950 rounded-xl p-5 border border-slate-800 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-900 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold font-mono text-sky-400 flex items-center">
+                                <i class="fa-solid fa-table-cells mr-2"></i> Separated Metered Data Table (`tbl_meter_readings`)
+                            </h3>
+                            <p class="text-[11px] text-slate-400">Stores full OCR telemetry, customer IDs, consumption readings, & officer foreign keys.</p>
+                        </div>
+
+                        <!-- Metered Table Controls -->
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <div class="relative">
+                                <input type="text" id="db-search-meter" oninput="renderMeterReadingsTable()" placeholder="Search IDPEL / Officer..." class="bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-500 text-[10px]"></i>
+                            </div>
+                            <select id="db-filter-utility" onchange="renderMeterReadingsTable()" class="bg-slate-900 border border-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-cyan-500">
+                                <option value="ALL">All Utilities</option>
+                                <option value="PLN">PLN Electricity</option>
+                                <option value="PDAM">PDAM Water</option>
+                            </select>
+                            <select id="db-filter-status" onchange="renderMeterReadingsTable()" class="bg-slate-900 border border-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-cyan-500">
+                                <option value="ALL">All Statuses</option>
+                                <option value="VALID">VALID</option>
+                                <option value="ANOMALY">ANOMALY / HIGH</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-[11px] font-mono">
+                            <thead class="bg-slate-900 text-slate-400 uppercase text-[9px]">
+                                <tr>
+                                    <th class="py-2.5 px-3">reading_id</th>
+                                    <th class="py-2.5 px-3">timestamp</th>
+                                    <th class="py-2.5 px-3">utility</th>
+                                    <th class="py-2.5 px-3">customer_id</th>
+                                    <th class="py-2.5 px-3">stand_reading</th>
+                                    <th class="py-2.5 px-3">usage_delta</th>
+                                    <th class="py-2.5 px-3">est_cost (Rp)</th>
+                                    <th class="py-2.5 px-3">officer_id (FK)</th>
+                                    <th class="py-2.5 px-3 text-right">status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="db-meter-readings-body" class="divide-y divide-slate-800/60 text-slate-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Database Content Tables View (Employees & Passwords) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Employee Database Table View -->
+                    <div class="bg-slate-950 rounded-xl p-4 border border-slate-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-bold font-mono text-emerald-400 flex items-center">
+                                <i class="fa-solid fa-address-book mr-2"></i> Employee Database (`tbl_employees`)
+                            </h3>
+                            <span class="text-[10px] text-slate-400 font-mono" id="emp-count-badge">3 Records</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] font-mono">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[9px]">
+                                    <tr>
+                                        <th class="py-2 px-2">emp_id</th>
+                                        <th class="py-2 px-2">full_name</th>
+                                        <th class="py-2 px-2">utility</th>
+                                        <th class="py-2 px-2">role</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="db-employees-body" class="divide-y divide-slate-800/60 text-slate-300">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Password Database Table View -->
+                    <div class="bg-slate-950 rounded-xl p-4 border border-slate-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-bold font-mono text-amber-400 flex items-center">
+                                <i class="fa-solid fa-key-skeleton mr-2"></i> Password Vault (`tbl_passwords`)
+                            </h3>
+                            <span class="text-[10px] text-slate-400 font-mono" id="pass-count-badge">3 Records</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] font-mono">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[9px]">
+                                    <tr>
+                                        <th class="py-2 px-2">emp_id</th>
+                                        <th class="py-2 px-2">password_hash (SHA256)</th>
+                                        <th class="py-2 px-2">fails</th>
+                                        <th class="py-2 px-2">locked</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="db-passwords-body" class="divide-y divide-slate-800/60 text-slate-300">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Authentication & Data Query Event Log -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold font-mono text-cyan-400 flex items-center">
+                            <i class="fa-solid fa-terminal mr-2"></i> Multi-Database Query Execution & Audit Stream
+                        </h3>
+                        <button onclick="clearAuthLogs()" class="text-[10px] text-slate-400 hover:text-slate-200">Clear Logs</button>
+                    </div>
+                    <div id="auth-log-console" class="bg-black p-3 rounded-lg font-mono text-[11px] text-slate-300 h-36 overflow-y-auto space-y-1 border border-slate-900">
+                        <!-- Logs added here -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="section-code" class="hidden space-y-6">
+            <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-100 flex items-center">
+                            <i class="fa-brands fa-android text-emerald-400 mr-3"></i> Android Separated Room DB Architecture Blueprint
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">
+                            Clean Room ORM setup showing separate database classes and DAOs for <strong>Auth Vault</strong> and <strong>Metered Reading Storage</strong>.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Isolated Room Tables
+                        </span>
+                        <span class="px-3 py-1 rounded-full text-xs font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                            Clean MVVM
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Code Tabs -->
+                <div class="border-b border-slate-800 flex space-x-2 overflow-x-auto" id="code-tabs">
+                    <button onclick="switchCodeTab('meterentity')" id="tab-btn-meterentity" class="px-4 py-2 text-xs font-mono font-bold border-b-2 border-cyan-400 text-cyan-400">
+                        MeterReadingEntity.kt
+                    </button>
+                    <button onclick="switchCodeTab('meterdao')" id="tab-btn-meterdao" class="px-4 py-2 text-xs font-mono font-bold text-slate-400 hover:text-slate-200">
+                        MeterReadingDao.kt
+                    </button>
+                    <button onclick="switchCodeTab('analyzer')" id="tab-btn-analyzer" class="px-4 py-2 text-xs font-mono font-bold text-slate-400 hover:text-slate-200">
+                        MeterImageAnalyzer.kt
+                    </button>
+                    <button onclick="switchCodeTab('viewmodel')" id="tab-btn-viewmodel" class="px-4 py-2 text-xs font-mono font-bold text-slate-400 hover:text-slate-200">
+                        MeterViewModel.kt
+                    </button>
+                    <button onclick="switchCodeTab('gradle')" id="tab-btn-gradle" class="px-4 py-2 text-xs font-mono font-bold text-slate-400 hover:text-slate-200">
+                        build.gradle.kts
+                    </button>
+                </div>
+
+                <!-- Code Content Viewer -->
+                <div class="relative bg-slate-950 rounded-xl mt-4 p-4 border border-slate-800 font-mono text-xs overflow-x-auto text-slate-300">
+                    <button onclick="copyCodeSnippet()" class="absolute top-3 right-3 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-sans border border-slate-700">
+                        <i class="fa-regular fa-copy mr-1"></i> Copy Code
+                    </button>
+
+                    <pre id="code-meterentity" class="leading-relaxed"><code>package com.utility.meterocr.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+
+/**
+ * Isolated Room Database Entity for Metered Readings.
+ * Foreign key officerId links to Employee entity without touching sensitive auth credentials.
+ */
+@Entity(
+    tableName = "tbl_meter_readings",
+    foreignKeys = [
+        ForeignKey(
+            entity = EmployeeEntity::class,
+            parentColumns = ["emp_id"],
+            childColumns = ["officer_id"],
+            onDelete = ForeignKey.RESTRICT
+        )
+    ],
+    indices = [Index(value = ["officer_id"]), Index(value = ["customer_id"])]
+)
+data class MeterReadingEntity(
+    @PrimaryKey val readingId: String,
+    val timestamp: Long,
+    val utilityType: String, // "PLN" or "PDAM"
+    val customerId: String,
+    val standReading: String,
+    val previousReading: Double,
+    val usageDelta: Double,
+    val estimatedCost: Double,
+    val officerId: String,
+    val validationStatus: String, // "VALID" or "ANOMALY"
+    val gpsLocation: String,
+    val imageFilePath: String? = null
+)</code></pre>
+
+                    <pre id="code-meterdao" class="hidden leading-relaxed"><code>package com.utility.meterocr.data.local.dao
+
+import androidx.room.*
+import com.utility.meterocr.data.local.entity.MeterReadingEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface MeterReadingDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReading(reading: MeterReadingEntity)
+
+    @Query("SELECT * FROM tbl_meter_readings ORDER BY timestamp DESC")
+    fun getAllReadings(): Flow&lt;List&lt;MeterReadingEntity&gt;&gt;
+
+    @Query("SELECT * FROM tbl_meter_readings WHERE utilityType = :type ORDER BY timestamp DESC")
+    fun getReadingsByUtility(type: String): Flow&lt;List&lt;MeterReadingEntity&gt;&gt;
+
+    @Query("SELECT * FROM tbl_meter_readings WHERE officerId = :officerId ORDER BY timestamp DESC")
+    fun getReadingsByOfficer(officerId: String): Flow&lt;List&lt;MeterReadingEntity&gt;&gt;
+
+    @Query("SELECT COUNT(*) FROM tbl_meter_readings WHERE validationStatus = 'ANOMALY'")
+    suspend fun getAnomalyCount(): Int
+}</code></pre>
+
+                    <pre id="code-analyzer" class="hidden leading-relaxed"><code>package com.utility.meterocr.domain.ocr
+
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+
+enum class ScanStep { STEP_1_CUSTOMER_ID, STEP_2_STAND_READING }
+
+data class MeterOCRResult(
+    val step: ScanStep,
+    val extractedValue: String = "",
+    val confidence: Float = 0.96f
+)
+
+/**
+ * 2-Step Offline OCR Analyzer for PLN/PDAM utility meters.
+ */
+class MeterImageAnalyzer(
+    private var currentStep: ScanStep = ScanStep.STEP_1_CUSTOMER_ID,
+    private val onStepExtracted: (MeterOCRResult) -> Unit
+) : ImageAnalysis.Analyzer {
+
+    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+    fun setScanStep(step: ScanStep) {
+        this.currentStep = step
+    }
+
+    @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+    override fun analyze(imageProxy: ImageProxy) {
+        val mediaImage = imageProxy.image
+        if (mediaImage != null) {
+            val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+
+            recognizer.process(inputImage)
+                .addOnSuccessListener { visionText ->
+                    val rawText = visionText.text
+                    
+                    when (currentStep) {
+                        ScanStep.STEP_1_CUSTOMER_ID -> {
+                            val customerId = extractCustomerId(rawText)
+                            if (customerId.isNotEmpty()) {
+                                onStepExtracted(MeterOCRResult(ScanStep.STEP_1_CUSTOMER_ID, customerId))
+                            }
+                        }
+                        ScanStep.STEP_2_STAND_READING -> {
+                            val standDigits = extractStandDigits(rawText)
+                            if (standDigits.isNotEmpty()) {
+                                onStepExtracted(MeterOCRResult(ScanStep.STEP_2_STAND_READING, standDigits))
+                            }
+                        }
+                    }
+                }
+                .addOnCompleteListener {
+                    imageProxy.close()
+                }
+        } else {
+            imageProxy.close()
+        }
+    }
+
+    private fun extractCustomerId(text: String): String {
+        val pattern = Regex("\\b\\d{11,12}\\b")
+        return pattern.find(text)?.value ?: ""
+    }
+
+    private fun extractStandDigits(text: String): String {
+        val pattern = Regex("\\b\\d{4,7}\\b")
+        return pattern.find(text)?.value ?: ""
+    }
+}</code></pre>
+
+                    <pre id="code-viewmodel" class="hidden leading-relaxed"><code>package com.utility.meterocr.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.utility.meterocr.data.local.dao.MeterReadingDao
+import com.utility.meterocr.data.local.entity.MeterReadingEntity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+enum class MeterType { PLN_ELECTRICITY, PDAM_WATER }
+
+data class OCRScanUiState(
+    val loggedOfficerId: String = "EMP-1001",
+    val selectedType: MeterType = MeterType.PLN_ELECTRICITY,
+    val customerId: String = "541100234182",
+    val detectedDigits: String = "014925",
+    val confidenceScore: Float = 0.98f,
+    val previousReading: Double = 14680.0,
+    val tariffRatePerUnit: Double = 1444.70,
+    val usageDelta: Double = 245.0,
+    val estimatedBill: Double = 353951.0
+)
+
+class MeterViewModel(private val meterDao: MeterReadingDao) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(OCRScanUiState())
+    val uiState: StateFlow&lt;OCRScanUiState&gt; = _uiState.asStateFlow()
+
+    fun saveReading(reading: MeterReadingEntity) {
+        viewModelScope.launch {
+            meterDao.insertReading(reading)
+        }
+    }
+}</code></pre>
+
+                    <pre id="code-gradle" class="hidden leading-relaxed"><code>plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
+}
+
+android {
+    namespace = "com.utility.meterocr"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.utility.meterocr"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0"
+    }
+}
+
+dependencies {
+    // Room Database dependencies
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:${roomVersion}")
+    implementation("androidx.room:room-ktx:${roomVersion}")
+    kapt("androidx.room:room-compiler:${roomVersion}")
+
+    // CameraX and ML Kit
+    val cameraXVersion = "1.3.1"
+    implementation("androidx.camera:camera-core:${cameraXVersion}")
+    implementation("androidx.camera:camera-camera2:${cameraXVersion}")
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-sandbox" class="hidden space-y-6">
+            <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+                <h2 class="text-xl font-bold text-slate-100 mb-2 flex items-center">
+                    <i class="fa-solid fa-sliders text-amber-400 mr-2"></i> Utility Meter Pre-Processing Debugger
+                </h2>
+                <p class="text-xs text-slate-400 mb-6">
+                    Utility meters often have glare or dirt. Adjust thresholding to optimize text extraction before OCR.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-xs font-mono text-cyan-400 font-bold block mb-2">Original Cropped ROI Frame</span>
+                            <canvas id="sandbox-roi-canvas" class="w-full h-28 bg-black rounded-lg border border-slate-800 object-contain"></canvas>
+                        </div>
+
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-xs font-mono text-amber-400 font-bold block mb-2">Binarized Thresholded Image</span>
+                            <canvas id="sandbox-threshold-canvas" class="w-full h-28 bg-black rounded-lg border border-slate-800 object-contain"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-5">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+                                <span>Contrast Boost</span>
+                                <span id="val-contrast" class="font-mono text-cyan-400">1.8x</span>
+                            </div>
+                            <input type="range" min="1.0" max="3.0" step="0.1" value="1.8" id="slider-contrast" oninput="updateSandboxFilters()" class="w-full accent-cyan-500 bg-slate-800 h-2 rounded-lg">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+                                <span>Binarization Threshold</span>
+                                <span id="val-threshold" class="font-mono text-cyan-400">125</span>
+                            </div>
+                            <input type="range" min="50" max="200" step="5" value="125" id="slider-threshold" oninput="updateSandboxFilters()" class="w-full accent-cyan-500 bg-slate-800 h-2 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: Register New Employee -->
+    <div id="new-emp-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-user-plus text-emerald-400 mr-2"></i> Register New Utility Employee
+                </h3>
+                <button onclick="closeNewEmpModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="handleRegisterEmployee(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Employee ID (NIK/ID):</label>
+                    <input type="text" id="reg-emp-id" required placeholder="e.g. EMP-1004" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Full Officer Name:</label>
+                    <input type="text" id="reg-full-name" required placeholder="e.g. Dewi Lestari" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Department / Utility Division:</label>
+                    <select id="reg-utility-type" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                        <option value="PLN">PLN (Electricity Division)</option>
+                        <option value="PDAM">PDAM (Water Division)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Role Permission:</label>
+                    <select id="reg-role" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                        <option value="Field Inspector">Field Inspector</option>
+                        <option value="Meter Reader">Meter Reader</option>
+                        <option value="Supervisor">Supervisor</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Set Account Password:</label>
+                    <input type="password" id="reg-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg transition-all">
+                        Commit to Both DBs
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Manual Meter Reading Record Entry -->
+    <div id="new-reading-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-plus-circle text-sky-400 mr-2"></i> Manual Entry into `tbl_meter_readings`
+                </h3>
+                <button onclick="closeNewMeterReadingModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="handleManualMeterSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Utility Service Type:</label>
+                    <select id="m-utility-type" onchange="adjustManualDefaults()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                        <option value="PLN">PLN Electricity</option>
+                        <option value="PDAM">PDAM Water</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Customer ID (IDPEL):</label>
+                    <input type="text" id="m-customer-id" required value="541100998877" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-cyan-300 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Previous Stand:</label>
+                        <input type="number" id="m-prev-stand" required value="12000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Current Stand:</label>
+                        <input type="number" id="m-curr-stand" required value="12350" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-amber-400 font-mono focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Inspecting Officer ID (FK):</label>
+                    <select id="m-officer-id" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono focus:border-cyan-500 focus:outline-none">
+                        <!-- Options populated dynamically from tbl_employees -->
+                    </select>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold text-xs shadow-lg transition-all">
+                        Write to `tbl_meter_readings`
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 1. SEPARATED DATABASES IN-MEMORY DATA MODEL
+         * - Employee Profile DB (tbl_employees)
+         * - Credentials/Password Vault (tbl_passwords)
+         * - Metered Data Database (tbl_meter_readings)
+         */
+
+        const DB_EMPLOYEES = [
+            {
+                emp_id: "EMP-1001",
+                full_name: "Budi Santoso",
+                email: "budi.santoso@pln.co.id",
+                department: "PLN Electricity Inspection",
+                utility_type: "PLN",
+                role: "Field Inspector",
+                created_at: "2026-01-10 08:00:00"
+            },
+            {
+                emp_id: "EMP-1002",
+                full_name: "Siti Rahma",
+                email: "siti.rahma@pdam.co.id",
+                department: "PDAM Water Meter Operations",
+                utility_type: "PDAM",
+                role: "Meter Reader",
+                created_at: "2026-01-15 09:30:00"
+            },
+            {
+                emp_id: "EMP-1003",
+                full_name: "Rahmat Hidayat",
+                email: "rahmat.hidayat@utility.gov.id",
+                department: "Regional Audit Supervisor",
+                utility_type: "PLN",
+                role: "Supervisor",
+                created_at: "2026-02-01 11:00:00"
+            }
+        ];
+
+        const DB_PASSWORDS = [
+            {
+                emp_id: "EMP-1001",
+                password_hash: "a4f8115e580e0c8b36879815efc27e02df6992d49e612f067d26888c3a9f074d", // pln_inspector_2026
+                salt: "sAlT_99812_pln",
+                failed_attempts: 0,
+                is_locked: false,
+                last_password_change: "2026-01-10"
+            },
+            {
+                emp_id: "EMP-1002",
+                password_hash: "31d5bc418a9134b22300b952f442fa9166f3634038d172087e584f2735748a04", // pdam_reader_2026
+                salt: "sAlT_44102_pdam",
+                failed_attempts: 0,
+                is_locked: false,
+                last_password_change: "2026-01-15"
+            },
+            {
+                emp_id: "EMP-1003",
+                password_hash: "f74815147321e05d0e74f3ff0df35c4bc5b341d3c01579d469fb5d7c4be514dd", // super_admin_2026
+                salt: "sAlT_10293_super",
+                failed_attempts: 0,
+                is_locked: false,
+                last_password_change: "2026-02-01"
+            }
+        ];
+
+        // DEDICATED SEPARATED METERED DATA DATABASE
+        let DB_METER_READINGS = [
+            {
+                reading_id: "MTR-20260908-001",
+                timestamp: "2026-09-08 08:30:12",
+                utility_type: "PLN",
+                customer_id: "541100234182",
+                stand_reading: "014925",
+                previous_reading: 14680,
+                usage_delta: 245,
+                unit: "kWh",
+                est_cost: 353951,
+                officer_id: "EMP-1001",
+                validation_status: "VALID",
+                gps_location: "-6.2088, 106.8456",
+                anomaly_flag: false
+            },
+            {
+                reading_id: "MTR-20260908-002",
+                timestamp: "2026-09-08 09:15:45",
+                utility_type: "PDAM",
+                customer_id: "09234182",
+                stand_reading: "008420",
+                previous_reading: 8392,
+                usage_delta: 28,
+                unit: "m³",
+                est_cost: 117600,
+                officer_id: "EMP-1002",
+                validation_status: "VALID",
+                gps_location: "-6.2112, 106.8521",
+                anomaly_flag: false
+            },
+            {
+                reading_id: "MTR-20260908-003",
+                timestamp: "2026-09-08 10:02:11",
+                utility_type: "PLN",
+                customer_id: "541100881299",
+                stand_reading: "031200",
+                previous_reading: 28000,
+                usage_delta: 3200,
+                unit: "kWh",
+                est_cost: 4623040,
+                officer_id: "EMP-1001",
+                validation_status: "ANOMALY",
+                gps_location: "-6.2045, 106.8390",
+                anomaly_flag: true
+            }
+        ];
+
+        // Active State Variables
+        let currentOfficer = DB_EMPLOYEES[0]; // Default Budi Santoso
+        let activeUtilityType = 'PLN'; // 'PLN' or 'PDAM'
+        let currentScanStep = 1; // 1: ID, 2: Stand
+        let currentTorch = false;
+        let videoStream = null;
+
+        // Rates
+        const RATES = {
+            PLN: { ratePerUnit: 1444.70, unit: 'kWh' },
+            PDAM: { ratePerUnit: 4200.00, unit: 'm³' }
+        };
+
+        // Presets for Demo canvas
+        const PRESETS = {
+            'pln-digital': {
+                idpel: "541100234182",
+                digits: "014925",
+                prev: 14680,
+                bgColor: "#091E3A",
+                textColor: "#00F0FF",
+                label: "PLN Digital Smart Meter"
+            },
+            'pln-analog': {
+                idpel: "541100994821",
+                digits: "028410",
+                prev: 28150,
+                bgColor: "#1A1D20",
+                textColor: "#FFB703",
+                label: "PLN Mechanical Analog Meter"
+            },
+            'pdam-water': {
+                idpel: "09234182",
+                digits: "008420",
+                prev: 8392,
+                bgColor: "#0A2540",
+                textColor: "#48CAE4",
+                label: "PDAM Water Meter Dial"
+            }
+        };
+
+        // SHA-256 Hashing Helper for Password Auth DB Engine
+        async function sha256(str) {
+            const buffer = new TextEncoder().encode(str);
+            const digest = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        window.addEventListener('load', () => {
+            updateUserUI();
+            renderPresetCanvas(PRESETS['pln-digital']);
+            renderMeterReadingsTable();
+            renderDbEmployees();
+            renderDbPasswords();
+            recalculateUsage();
+            logAuthConsole("SYSTEM_INIT: Tri-database engine online.");
+            logAuthConsole("QUERY: Isolated `tbl_meter_readings` mounted with 3 records.");
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-cyan-600';
+            toast.className = `${bgClass} text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            ['demo', 'db', 'code', 'sandbox'].forEach(t => {
+                const sec = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabId) {
+                    sec.classList.remove('hidden');
+                    btn.className = "px-3.5 py-2 rounded-lg bg-cyan-600 text-white font-semibold transition-all duration-200 shadow-md";
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = "px-3.5 py-2 rounded-lg text-slate-300 hover:text-white transition-all duration-200";
+                }
+            });
+
+            if (tabId === 'sandbox') {
+                initSandboxCanvas();
+            }
+        }
+
+        // Auth Modal Controls
+        function toggleAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function closeAuthModalIfLoggedIn() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function fillDemoLogin(empId, password) {
+            document.getElementById('login-emp-id').value = empId;
+            document.getElementById('login-password').value = password;
+        }
+
+        async function handleEmployeeLogin(e) {
+            e.preventDefault();
+            const empIdInput = document.getElementById('login-emp-id').value.trim();
+            const passwordInput = document.getElementById('login-password').value;
+            const errorMsg = document.getElementById('login-error-msg');
+            errorMsg.classList.add('hidden');
+
+            logAuthConsole(`QUERY RUN: SELECT * FROM tbl_passwords WHERE emp_id = '${empIdInput}'`);
+
+            const passRecord = DB_PASSWORDS.find(p => p.emp_id === empIdInput);
+            
+            if (!passRecord) {
+                logAuthConsole(`AUTH FAILED: Employee ID '${empIdInput}' not found in tbl_passwords.`, 'ERROR');
+                showLoginError("Employee ID not registered");
+                return;
+            }
+
+            if (passRecord.is_locked) {
+                logAuthConsole(`AUTH FAILED: Account '${empIdInput}' is locked due to high fail count.`, 'ERROR');
+                showLoginError("Account is locked due to failed attempts");
+                return;
+            }
+
+            // Verify password hash
+            const computedHash = await sha256(passwordInput);
+            if (computedHash === passRecord.password_hash) {
+                // Success: fetch employee profile details from tbl_employees
+                logAuthConsole(`AUTH SUCCESS: SHA-256 match for ${empIdInput}`);
+                logAuthConsole(`JOIN QUERY: SELECT * FROM tbl_employees WHERE emp_id = '${empIdInput}'`);
+
+                const empProfile = DB_EMPLOYEES.find(e => e.emp_id === empIdInput);
+                currentOfficer = empProfile;
+                passRecord.failed_attempts = 0;
+
+                updateUserUI();
+                toggleAuthModal();
+                showToast(`Welcome, ${currentOfficer.full_name}! Authenticated.`, 'success');
+            } else {
+                passRecord.failed_attempts += 1;
+                if (passRecord.failed_attempts >= 3) {
+                    passRecord.is_locked = true;
+                    logAuthConsole(`SECURITY ALERT: Account ${empIdInput} locked after 3 failures.`, 'WARN');
+                }
+                logAuthConsole(`AUTH FAILED: Invalid password hash for ${empIdInput}`, 'ERROR');
+                showLoginError("Invalid password hash");
+                renderDbPasswords();
+            }
+        }
+
+        function showLoginError(msg) {
+            const errorMsg = document.getElementById('login-error-msg');
+            document.getElementById('login-error-text').innerText = msg;
+            errorMsg.classList.remove('hidden');
+        }
+
+        function updateUserUI() {
+            if (currentOfficer) {
+                document.getElementById('nav-user-name').innerText = currentOfficer.full_name;
+                document.getElementById('nav-user-role').innerText = `${currentOfficer.emp_id} • ${currentOfficer.role}`;
+                document.getElementById('user-avatar-badge').innerText = currentOfficer.emp_id.substring(4);
+                document.getElementById('auth-action-btn').innerHTML = `<i class="fa-solid fa-right-from-bracket mr-1"></i> Switch`;
+                document.getElementById('field-officer-name').innerText = currentOfficer.full_name;
+                document.getElementById('field-officer-id').innerText = currentOfficer.emp_id;
+                document.getElementById('phone-officer-tag').innerText = `Officer: ${currentOfficer.emp_id} (${currentOfficer.full_name.split(' ')[0]})`;
+            }
+        }
+
+        function setServiceType(type) {
+            activeUtilityType = type;
+            const btnPln = document.getElementById('type-pln');
+            const btnPdam = document.getElementById('type-pdam');
+            const label = document.getElementById('app-service-label');
+            const badge = document.getElementById('badge-meter-type');
+
+            if (type === 'PLN') {
+                btnPln.className = "px-2.5 py-1 text-[11px] font-bold rounded-md bg-cyan-600 text-white transition-all";
+                btnPdam.className = "px-2.5 py-1 text-[11px] font-bold rounded-md text-slate-400 hover:text-white transition-all";
+                label.innerText = "PLN Electricity Scanner";
+                badge.innerText = "PLN Electricity Meter";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20";
+                loadPresetMeter('pln-digital');
+            } else {
+                btnPdam.className = "px-2.5 py-1 text-[11px] font-bold rounded-md bg-blue-600 text-white transition-all";
+                btnPln.className = "px-2.5 py-1 text-[11px] font-bold rounded-md text-slate-400 hover:text-white transition-all";
+                label.innerText = "PDAM Water Scanner";
+                badge.innerText = "PDAM Water Meter";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20";
+                loadPresetMeter('pdam-water');
+            }
+        }
+
+        function setScanStep(step) {
+            currentScanStep = step;
+            const btn1 = document.getElementById('step-btn-1');
+            const btn2 = document.getElementById('step-btn-2');
+            const roiLabel = document.getElementById('roi-label');
+            const targetBadge = document.getElementById('roi-target-badge');
+            const captureBtnText = document.getElementById('capture-btn-text');
+
+            if (step === 1) {
+                btn1.className = "px-2 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold flex items-center justify-center space-x-1 transition-all";
+                btn2.className = "px-2 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 flex items-center justify-center space-x-1 transition-all opacity-60";
+                roiLabel.innerHTML = `<i class="fa-solid fa-1 mr-1"></i>STEP 1: ALIGN CUSTOMER ID`;
+                targetBadge.innerText = "Customer ID";
+                captureBtnText.innerText = "SCAN STEP 1 (ID)";
+                document.getElementById('scan-status-indicator').innerText = "ALIGN ID NUMBERS";
+            } else {
+                btn2.className = "px-2 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/50 font-bold flex items-center justify-center space-x-1 transition-all";
+                btn1.className = "px-2 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 flex items-center justify-center space-x-1 transition-all opacity-80";
+                roiLabel.innerHTML = `<i class="fa-solid fa-2 mr-1"></i>STEP 2: ALIGN STAND DIGITS`;
+                targetBadge.innerText = "Stand Digits";
+                captureBtnText.innerText = "SCAN STEP 2 (STAND)";
+                document.getElementById('scan-status-indicator').innerText = "ALIGN METER DIALS";
+            }
+        }
+
+        function resetScanSteps() {
+            setScanStep(1);
+            document.getElementById('step-1-check').classList.add('hidden');
+            document.getElementById('step-2-check').classList.add('hidden');
+            showToast("Scan sequence reset", "info");
+        }
+
+        function loadPresetMeter(presetKey) {
+            const preset = PRESETS[presetKey];
+            if (!preset) return;
+            renderPresetCanvas(preset);
+
+            if (currentScanStep === 1) {
+                document.getElementById('extracted-idpel').value = preset.idpel;
+            } else {
+                document.getElementById('extracted-digits').value = preset.digits;
+            }
+            recalculateUsage();
+        }
+
+        function renderPresetCanvas(preset) {
+            const canvas = document.getElementById('meter-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 380;
+            canvas.height = 500;
+
+            // Background
+            ctx.fillStyle = preset.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Meter Frame Body
+            ctx.fillStyle = '#111827';
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.roundRect(40, 50, 300, 400, 24);
+            ctx.fill();
+            ctx.stroke();
+
+            // Display Screen Box
+            ctx.fillStyle = '#030712';
+            ctx.strokeStyle = '#1F2937';
+            ctx.beginPath();
+            ctx.roundRect(65, 110, 250, 90, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            // Digits Text
+            ctx.fillStyle = preset.textColor;
+            ctx.font = '700 28px "JetBrains Mono"';
+            ctx.textAlign = 'center';
+            ctx.fillText(preset.digits, 190, 165);
+
+            // Customer ID Label & Number
+            ctx.fillStyle = '#9CA3AF';
+            ctx.font = '600 11px sans-serif';
+            ctx.fillText("IDPEL / METER NO:", 190, 280);
+            ctx.fillStyle = '#F3F4F6';
+            ctx.font = '700 16px "JetBrains Mono"';
+            ctx.fillText(preset.idpel, 190, 305);
+
+            // Utility Brand Text
+            ctx.fillStyle = '#6B7280';
+            ctx.font = '700 12px sans-serif';
+            ctx.fillText(preset.label.toUpperCase(), 190, 85);
+        }
+
+        async function useCamera() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('meter-canvas');
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = videoStream;
+                video.classList.remove('hidden');
+                canvas.classList.add('hidden');
+                showToast("Live Camera feed connected", "info");
+            } catch (err) {
+                showToast("Unable to access camera. Using simulation.", "error");
+            }
+        }
+
+        function toggleTorch() {
+            currentTorch = !currentTorch;
+            const btn = document.getElementById('torch-btn');
+            if (currentTorch) {
+                btn.className = "w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center backdrop-blur-sm text-xs font-bold shadow-lg shadow-amber-500/50";
+                showToast("Flashlight toggled ON", "info");
+            } else {
+                btn.className = "w-8 h-8 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-amber-400 flex items-center justify-center backdrop-blur-sm text-xs";
+            }
+        }
+
+        function captureAndOCR() {
+            const loader = document.getElementById('ocr-loader');
+            loader.classList.remove('hidden');
+
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                if (currentScanStep === 1) {
+                    document.getElementById('step-1-check').classList.remove('hidden');
+                    setScanStep(2);
+                    showToast("Step 1 (ID) scanned successfully!", "success");
+                } else {
+                    document.getElementById('step-2-check').classList.remove('hidden');
+                    showToast("Step 2 (Stand Reading) captured!", "success");
+                }
+                recalculateUsage();
+            }, 800);
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.getElementById('meter-canvas');
+                    const ctx = canvas.getContext('2d');
+                    document.getElementById('webcam').classList.add('hidden');
+                    canvas.classList.remove('hidden');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    captureAndOCR();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function recalculateUsage() {
+            const idpel = document.getElementById('extracted-idpel').value.trim();
+            const currDigits = parseFloat(document.getElementById('extracted-digits').value) || 0;
+            const config = RATES[activeUtilityType];
+
+            // Lookup previous record or fallback
+            const existingRecord = DB_METER_READINGS.find(m => m.customer_id === idpel);
+            const prevReading = existingRecord ? existingRecord.previous_reading : Math.max(0, currDigits - 245);
+            const usageDelta = Math.max(0, currDigits - prevReading);
+            const estCost = Math.round(usageDelta * config.ratePerUnit);
+
+            document.getElementById('val-prev-reading').innerText = `${prevReading.toLocaleString()} ${config.unit}`;
+            document.getElementById('val-usage-delta').innerText = `${usageDelta.toLocaleString()} ${config.unit}`;
+            document.getElementById('val-est-cost').innerText = `Rp ${estCost.toLocaleString('id-ID')}`;
+            document.getElementById('unit-label').innerText = config.unit;
+
+            // Sanity Check Alert
+            const valTitle = document.getElementById('validation-title');
+            const valDesc = document.getElementById('validation-desc');
+
+            if (currDigits < prevReading) {
+                valTitle.innerText = "ANOMALY: Current Stand is LOWER than Previous Reading";
+                valTitle.className = "font-bold text-red-400";
+                valDesc.innerHTML = `Rollback detected! Current: ${currDigits}, Prev: ${prevReading}. Flagged for supervisor review.`;
+            } else if (usageDelta > 2000) {
+                valTitle.innerText = "WARNING: Unusually High Consumption Spike";
+                valTitle.className = "font-bold text-amber-400";
+                valDesc.innerHTML = `High usage delta detected (+${usageDelta} ${config.unit}). Flagged as ANOMALY.`;
+            } else {
+                valTitle.innerText = "Validation Check Passed";
+                valTitle.className = "font-bold text-emerald-400";
+                valDesc.innerHTML = `Usage delta is normal (+${usageDelta} ${config.unit}). Calculated cost: Rp ${estCost.toLocaleString('id-ID')}.`;
+            }
+        }
+
+        function saveCurrentReading() {
+            const idpel = document.getElementById('extracted-idpel').value.trim();
+            const currDigits = document.getElementById('extracted-digits').value.trim();
+            const config = RATES[activeUtilityType];
+            
+            if (!idpel || !currDigits) {
+                showToast("Please ensure Customer ID & Stand Reading are populated", "error");
+                return;
+            }
+
+            const currVal = parseFloat(currDigits);
+            const existingRecord = DB_METER_READINGS.find(m => m.customer_id === idpel);
+            const prevReading = existingRecord ? existingRecord.previous_reading : Math.max(0, currVal - 245);
+            const usageDelta = Math.max(0, currVal - prevReading);
+            const estCost = Math.round(usageDelta * config.ratePerUnit);
+            const isAnomaly = currVal < prevReading || usageDelta > 2000;
+
+            const now = new Date();
+            const dateStr = now.toISOString().replace('T', ' ').substring(0, 19);
+            const newReadingId = `MTR-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${Math.floor(100+Math.random()*900)}`;
+
+            const newReadingObj = {
+                reading_id: newReadingId,
+                timestamp: dateStr,
+                utility_type: activeUtilityType,
+                customer_id: idpel,
+                stand_reading: currDigits.padStart(6, '0'),
+                previous_reading: prevReading,
+                usage_delta: usageDelta,
+                unit: config.unit,
+                est_cost: estCost,
+                officer_id: currentOfficer ? currentOfficer.emp_id : "EMP-1001",
+                validation_status: isAnomaly ? "ANOMALY" : "VALID",
+                gps_location: "-6.2088, 106.8456",
+                anomaly_flag: isAnomaly
+            };
+
+            // INSERT INTO SEPARATED METERED DATA DB
+            DB_METER_READINGS.unshift(newReadingObj);
+
+            logAuthConsole(`INSERT QUERY: Wrote new record ${newReadingId} to \`tbl_meter_readings\` (FK officer_id='${newReadingObj.officer_id}')`);
+            
+            renderMeterReadingsTable();
+            showToast(`Saved to tbl_meter_readings ID: ${newReadingId}`, "success");
+        }
+
+        function renderMeterReadingsTable() {
+            const tbodyLocal = document.getElementById('history-table-body');
+            const tbodyDb = document.getElementById('db-meter-readings-body');
+            const searchQuery = (document.getElementById('db-search-meter')?.value || '').toLowerCase();
+            const filterUtility = document.getElementById('db-filter-utility')?.value || 'ALL';
+            const filterStatus = document.getElementById('db-filter-status')?.value || 'ALL';
+
+            // Filter logic
+            const filtered = DB_METER_READINGS.filter(m => {
+                const matchSearch = m.customer_id.toLowerCase().includes(searchQuery) || 
+                                    m.reading_id.toLowerCase().includes(searchQuery) ||
+                                    m.officer_id.toLowerCase().includes(searchQuery);
+                const matchUtil = filterUtility === 'ALL' || m.utility_type === filterUtility;
+                const matchStat = filterStatus === 'ALL' || m.validation_status === filterStatus;
+                return matchSearch && matchUtil && matchStat;
+            });
+
+            // Update Metrics counters
+            document.getElementById('stat-total-readings').innerText = DB_METER_READINGS.length;
+            const totalPln = DB_METER_READINGS.filter(m => m.utility_type === 'PLN').reduce((a, b) => a + b.usage_delta, 0);
+            const totalPdam = DB_METER_READINGS.filter(m => m.utility_type === 'PDAM').reduce((a, b) => a + b.usage_delta, 0);
+            const totalAnomalies = DB_METER_READINGS.filter(m => m.anomaly_flag).length;
+
+            document.getElementById('stat-pln-volume').innerText = `${totalPln.toLocaleString()} kWh`;
+            document.getElementById('stat-pdam-volume').innerText = `${totalPdam.toLocaleString()} m³`;
+            document.getElementById('stat-anomaly-count').innerText = `${totalAnomalies} Flagged`;
+
+            // Render Local Dashboard Log
+            tbodyLocal.innerHTML = DB_METER_READINGS.slice(0, 5).map(m => `
+                <tr class="hover:bg-slate-800/40 transition-all">
+                    <td class="py-2.5 px-3">
+                        <div class="font-mono font-bold text-slate-200">${m.reading_id}</div>
+                        <div class="text-[10px] text-slate-500">${m.timestamp}</div>
+                    </td>
+                    <td class="py-2.5 px-3 font-mono text-cyan-400">${m.officer_id}</td>
+                    <td class="py-2.5 px-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.utility_type==='PLN'?'bg-cyan-500/20 text-cyan-300':'bg-blue-500/20 text-blue-300'}">${m.utility_type}</span>
+                    </td>
+                    <td class="py-2.5 px-3 font-mono text-slate-300">${m.customer_id}</td>
+                    <td class="py-2.5 px-3 font-mono font-bold text-amber-400">${m.stand_reading} ${m.unit}</td>
+                    <td class="py-2.5 px-3 text-right">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.anomaly_flag?'bg-red-500/20 text-red-300':'bg-emerald-500/20 text-emerald-300'}">${m.validation_status}</span>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Render Separated DB Architecture Full Table
+            tbodyDb.innerHTML = filtered.map(m => `
+                <tr class="hover:bg-slate-900/80 transition-all">
+                    <td class="py-2 px-3 text-sky-400 font-bold">${m.reading_id}</td>
+                    <td class="py-2 px-3 text-slate-400 text-[10px]">${m.timestamp}</td>
+                    <td class="py-2 px-3">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${m.utility_type==='PLN'?'bg-cyan-500/20 text-cyan-300':'bg-blue-500/20 text-blue-300'}">${m.utility_type}</span>
+                    </td>
+                    <td class="py-2 px-3 text-slate-200">${m.customer_id}</td>
+                    <td class="py-2 px-3 text-amber-300 font-bold">${m.stand_reading}</td>
+                    <td class="py-2 px-3 text-emerald-400">+${m.usage_delta} ${m.unit}</td>
+                    <td class="py-2 px-3 text-slate-300">Rp ${m.est_cost.toLocaleString('id-ID')}</td>
+                    <td class="py-2 px-3 text-cyan-400 font-bold">${m.officer_id}</td>
+                    <td class="py-2 px-3 text-right">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-bold ${m.anomaly_flag?'bg-red-500/20 text-red-300':'bg-emerald-500/20 text-emerald-300'}">${m.validation_status}</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderDbEmployees() {
+            const tbody = document.getElementById('db-employees-body');
+            document.getElementById('emp-count-badge').innerText = `${DB_EMPLOYEES.length} Records`;
+            tbody.innerHTML = DB_EMPLOYEES.map(e => `
+                <tr class="hover:bg-slate-900/60">
+                    <td class="py-2 px-2 text-cyan-400 font-bold">${e.emp_id}</td>
+                    <td class="py-2 px-2 text-slate-200">${e.full_name}</td>
+                    <td class="py-2 px-2 text-slate-400">${e.utility_type}</td>
+                    <td class="py-2 px-2 text-emerald-400">${e.role}</td>
+                </tr>
+            `).join('');
+
+            // Also update officer dropdown in manual reading modal
+            const selectOfficer = document.getElementById('m-officer-id');
+            if (selectOfficer) {
+                selectOfficer.innerHTML = DB_EMPLOYEES.map(e => `<option value="${e.emp_id}">${e.emp_id} - ${e.full_name} (${e.utility_type})</option>`).join('');
+            }
+        }
+
+        function renderDbPasswords() {
+            const tbody = document.getElementById('db-passwords-body');
+            document.getElementById('pass-count-badge').innerText = `${DB_PASSWORDS.length} Records`;
+            tbody.innerHTML = DB_PASSWORDS.map(p => `
+                <tr class="hover:bg-slate-900/60">
+                    <td class="py-2 px-2 text-amber-400 font-bold">${p.emp_id}</td>
+                    <td class="py-2 px-2 text-slate-400 font-mono text-[10px] truncate max-w-[120px]">${p.password_hash}</td>
+                    <td class="py-2 px-2 text-slate-300">${p.failed_attempts}</td>
+                    <td class="py-2 px-2 ${p.is_locked?'text-red-400 font-bold':'text-emerald-400'}">${p.is_locked?'YES':'NO'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function logAuthConsole(msg, type = 'INFO') {
+            const consoleBox = document.getElementById('auth-log-console');
+            const now = new Date().toISOString().substring(11, 19);
+            const colorClass = type === 'ERROR' ? 'text-red-400' : type === 'WARN' ? 'text-amber-400' : 'text-cyan-300';
+            const logLine = `<div class="${colorClass}">[${now}] ${msg}</div>`;
+            consoleBox.innerHTML += logLine;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function clearAuthLogs() {
+            document.getElementById('auth-log-console').innerHTML = '';
+            showToast("Console audit log cleared", "info");
+        }
+
+        function openNewEmpModal() {
+            document.getElementById('new-emp-modal').classList.remove('hidden');
+        }
+
+        function closeNewEmpModal() {
+            document.getElementById('new-emp-modal').classList.add('hidden');
+        }
+
+        function openNewMeterReadingModal() {
+            document.getElementById('new-reading-modal').classList.remove('hidden');
+        }
+
+        function closeNewMeterReadingModal() {
+            document.getElementById('new-reading-modal').classList.add('hidden');
+        }
+
+        async function handleRegisterEmployee(e) {
+            e.preventDefault();
+            const empId = document.getElementById('reg-emp-id').value.trim();
+            const fullName = document.getElementById('reg-full-name').value.trim();
+            const utility = document.getElementById('reg-utility-type').value;
+            const role = document.getElementById('reg-role').value;
+            const pass = document.getElementById('reg-password').value;
+
+            if (DB_EMPLOYEES.some(x => x.emp_id === empId)) {
+                showToast("Employee ID already exists!", "error");
+                return;
+            }
+
+            const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+            // 1. Commit profile to tbl_employees
+            DB_EMPLOYEES.push({
+                emp_id: empId,
+                full_name: fullName,
+                email: `${empId.toLowerCase()}@utility.gov.id`,
+                department: `${utility} Inspection Unit`,
+                utility_type: utility,
+                role: role,
+                created_at: nowStr
+            });
+
+            // 2. Commit hashed credentials to tbl_passwords
+            const passHash = await sha256(pass);
+            DB_PASSWORDS.push({
+                emp_id: empId,
+                password_hash: passHash,
+                salt: `sAlT_${Math.floor(Math.random()*90000+10000)}`,
+                failed_attempts: 0,
+                is_locked: false,
+                last_password_change: nowStr.substring(0, 10)
+            });
+
+            logAuthConsole(`REGISTRATION: Added profile to tbl_employees and credentials to tbl_passwords for ${empId}`);
+
+            renderDbEmployees();
+            renderDbPasswords();
+            closeNewEmpModal();
+            showToast(`Officer ${empId} registered successfully!`, "success");
+        }
+
+        function adjustManualDefaults() {
+            const uType = document.getElementById('m-utility-type').value;
+            if (uType === 'PDAM') {
+                document.getElementById('m-customer-id').value = "09234182";
+            } else {
+                document.getElementById('m-customer-id').value = "541100998877";
+            }
+        }
+
+        function handleManualMeterSubmit(e) {
+            e.preventDefault();
+            const uType = document.getElementById('m-utility-type').value;
+            const custId = document.getElementById('m-customer-id').value.trim();
+            const prevStand = parseFloat(document.getElementById('m-prev-stand').value) || 0;
+            const currStand = parseFloat(document.getElementById('m-curr-stand').value) || 0;
+            const officerId = document.getElementById('m-officer-id').value;
+
+            const config = RATES[uType];
+            const delta = Math.max(0, currStand - prevStand);
+            const estCost = Math.round(delta * config.ratePerUnit);
+            const isAnomaly = currStand < prevStand || delta > 2000;
+
+            const now = new Date();
+            const dateStr = now.toISOString().replace('T', ' ').substring(0, 19);
+            const newReadingId = `MTR-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${Math.floor(100+Math.random()*900)}`;
+
+            DB_METER_READINGS.unshift({
+                reading_id: newReadingId,
+                timestamp: dateStr,
+                utility_type: uType,
+                customer_id: custId,
+                stand_reading: currStand.toString().padStart(6, '0'),
+                previous_reading: prevStand,
+                usage_delta: delta,
+                unit: config.unit,
+                est_cost: estCost,
+                officer_id: officerId,
+                validation_status: isAnomaly ? "ANOMALY" : "VALID",
+                gps_location: "-6.2088, 106.8456",
+                anomaly_flag: isAnomaly
+            });
+
+            logAuthConsole(`MANUAL ENTRY: Inserted reading ${newReadingId} into tbl_meter_readings by ${officerId}`);
+
+            renderMeterReadingsTable();
+            closeNewMeterReadingModal();
+            showToast(`Reading ${newReadingId} added to tbl_meter_readings`, "success");
+        }
+
+        function switchCodeTab(tabKey) {
+            const tabs = ['meterentity', 'meterdao', 'analyzer', 'viewmodel', 'gradle'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const codeBlock = document.getElementById(`code-${t}`);
+                if (t === tabKey) {
+                    btn.className = "px-4 py-2 text-xs font-mono font-bold border-b-2 border-cyan-400 text-cyan-400";
+                    codeBlock.classList.remove('hidden');
+                } else {
+                    btn.className = "px-4 py-2 text-xs font-mono font-bold text-slate-400 hover:text-slate-200";
+                    codeBlock.classList.add('hidden');
+                }
+            });
+        }
+
+        function copyCodeSnippet() {
+            showToast("Code snippet copied to clipboard!", "info");
+        }
+
+        function exportHistoryCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,reading_id,timestamp,utility_type,customer_id,stand_reading,usage_delta,est_cost,officer_id,validation_status\n";
+            DB_METER_READINGS.forEach(row => {
+                csvContent += `${row.reading_id},${row.timestamp},${row.utility_type},${row.customer_id},${row.stand_reading},${row.usage_delta},${row.est_cost},${row.officer_id},${row.validation_status}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `metered_readings_db_export_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("CSV export generated from tbl_meter_readings", "success");
+        }
+
+        function updateSandboxFilters() {
+            const contrast = document.getElementById('slider-contrast').value;
+            const threshold = document.getElementById('slider-threshold').value;
+            document.getElementById('val-contrast').innerText = `${contrast}x`;
+            document.getElementById('val-threshold').innerText = threshold;
+            initSandboxCanvas();
+        }
+
+        function initSandboxCanvas() {
+            const cRoi = document.getElementById('sandbox-roi-canvas');
+            const cThresh = document.getElementById('sandbox-threshold-canvas');
+            if (!cRoi || !cThresh) return;
+
+            const ctxRoi = cRoi.getContext('2d');
+            const ctxThresh = cThresh.getContext('2d');
+
+            cRoi.width = 300;
+            cRoi.height = 100;
+            cThresh.width = 300;
+            cThresh.height = 100;
+
+            // Render ROI simulated meter text
+            ctxRoi.fillStyle = '#0F172A';
+            ctxRoi.fillRect(0, 0, 300, 100);
+            ctxRoi.fillStyle = '#00F0FF';
+            ctxRoi.font = '700 28px "JetBrains Mono"';
+            ctxRoi.fillText("014925", 80, 60);
+
+            // Render Thresholded image
+            ctxThresh.fillStyle = '#000000';
+            ctxThresh.fillRect(0, 0, 300, 100);
+            ctxThresh.fillStyle = '#FFFFFF';
+            ctxThresh.font = '700 28px "JetBrains Mono"';
+            ctxThresh.fillText("014925", 80, 60);
+        }
+    </script>
+</body>
+</html>
