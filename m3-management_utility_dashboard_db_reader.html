@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility Management Intelligence & Live DB Reader</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js for Executive & Operational Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        pln: {
+                            light: '#38BDF8',
+                            DEFAULT: '#0284C7',
+                            dark: '#0369A1',
+                            accent: '#F59E0B'
+                        },
+                        pdam: {
+                            light: '#60A5FA',
+                            DEFAULT: '#2563EB',
+                            dark: '#1D4ED8'
+                        },
+                        brand: {
+                            50: '#F0F9FF',
+                            500: '#06B6D4',
+                            600: '#0891B2',
+                            900: '#0F172A',
+                            950: '#020617'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #F8FAFC;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.3);
+        }
+        .glow-amber {
+            box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.3);
+        }
+        .glow-rose {
+            box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.3);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090D16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06B6D4;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Brand Logo & Platform Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-chart-line text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
+                            MeterScan Intelligence
+                        </h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                            Executive & Ops Suite v4.0
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">PLN Electricity & PDAM Water Database Reader & Management Portal</p>
+                </div>
+            </div>
+
+            <!-- Global Role & View Switcher Controls -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                
+                <!-- Role / Perspective Switcher Pill -->
+                <div class="bg-slate-900 border border-slate-800 p-1 rounded-xl flex items-center text-xs font-semibold">
+                    <button id="role-btn-top" onclick="switchManagementRole('TOP')" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white shadow-md transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-crown text-amber-300"></i>
+                        <span>Top Management</span>
+                    </button>
+                    <button id="role-btn-middle" onclick="switchManagementRole('MIDDLE')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>Middle / Ops</span>
+                    </button>
+                </div>
+
+                <!-- Database Connection Status Badge -->
+                <div class="hidden md:flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span class="font-mono text-slate-300">Live DB: <strong class="text-emerald-400">ONLINE</strong></span>
+                </div>
+
+                <!-- Sync DB Button -->
+                <button onclick="triggerDataSync()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all flex items-center space-x-1.5">
+                    <i class="fa-solid fa-rotate text-xs" id="sync-icon"></i>
+                    <span class="hidden sm:inline">Sync</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- Navigation Sub-Tabs -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-4">
+            <div class="flex space-x-1 sm:space-x-2 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs sm:text-sm font-semibold flex-wrap gap-y-1">
+                <button id="tab-btn-dashboard" onclick="switchMainTab('dashboard')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md transition-all">
+                    <i class="fa-solid fa-chart-pie mr-2"></i><span id="tab-dashboard-label">Top Exec Dashboard</span>
+                </button>
+                <button id="tab-btn-unmetered" onclick="switchMainTab('unmetered')" class="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 transition-all">
+                    <i class="fa-solid fa-plug-circle-exclamation mr-2 text-amber-400"></i>Unmetered Premises
+                </button>
+                <button id="tab-btn-db" onclick="switchMainTab('db')" class="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 transition-all">
+                    <i class="fa-solid fa-database mr-2"></i>Live Database Reader
+                </button>
+                <button id="tab-btn-officers" onclick="switchMainTab('officers')" class="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 transition-all">
+                    <i class="fa-solid fa-users-gear mr-2"></i>Field Crew Matrix
+                </button>
+                <button id="tab-btn-query" onclick="switchMainTab('query')" class="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 transition-all">
+                    <i class="fa-solid fa-code mr-2"></i>SQL Query Console
+                </button>
+            </div>
+
+            <!-- Global Time & Utility Filters -->
+            <div class="flex items-center space-x-2 text-xs">
+                <select id="timeframe-select" onchange="refreshAllViews()" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 font-medium focus:outline-none focus:border-cyan-500">
+                    <option value="today">Today (Sep 8, 2026)</option>
+                    <option value="week" selected>This Week</option>
+                    <option value="month">September 2026</option>
+                    <option value="q3">Q3 2026</option>
+                </select>
+
+                <select id="utility-filter-select" onchange="refreshAllViews()" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 font-medium focus:outline-none focus:border-cyan-500">
+                    <option value="ALL">All Utilities (PLN + PDAM)</option>
+                    <option value="PLN">PLN Electricity Only</option>
+                    <option value="PDAM">PDAM Water Only</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SECTION 1: TOP MANAGEMENT EXECUTIVE DASHBOARD -->
+        <div id="section-top-management" class="space-y-6">
+            
+            <!-- Executive Banner -->
+            <div class="glass-card rounded-2xl p-6 border-l-4 border-l-cyan-500 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase">Executive Suite</span>
+                        <h2 class="text-xl font-extrabold text-slate-100">Strategic Utility Revenue & Regularization Intelligence</h2>
+                    </div>
+                    <p class="text-xs text-slate-400">High-level overview of PLN & PDAM revenue monitoring, unmetered leakage recovery, and scanner efficiency.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="exportExecutiveSummaryPDF()" class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Export Executive Briefing</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Executive Macro KPI Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- KPI 1: Monitored Utility Value -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Monitored Monthly Billed</p>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold font-mono text-slate-100 mt-1" id="top-kpi-monitored">Rp 5.73 B</h3>
+                            <div class="flex items-center mt-2 text-xs text-emerald-400 font-semibold">
+                                <i class="fa-solid fa-arrow-trend-up mr-1"></i>
+                                <span>+18.4% YoY accuracy gain</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-money-bill-trend-up"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400 font-mono">
+                        <span>PLN: <strong class="text-cyan-400">Rp 5.35 B</strong></span>
+                        <span>PDAM: <strong class="text-blue-400">Rp 378 M</strong></span>
+                    </div>
+                </div>
+
+                <!-- KPI 2: Revenue Recovery via Regularization -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Unmetered Revenue Recovered</p>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold font-mono text-amber-400 mt-1" id="top-kpi-recovered">Rp 184.5 M</h3>
+                            <div class="flex items-center mt-2 text-xs text-amber-400 font-semibold">
+                                <i class="fa-solid fa-shield-halved mr-1"></i>
+                                <span>42 illegal hookups converted</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400 font-mono">
+                        <span>PLN Recovered: <strong class="text-amber-400">Rp 142 M</strong></span>
+                        <span>PDAM: <strong class="text-blue-300">Rp 42.5 M</strong></span>
+                    </div>
+                </div>
+
+                <!-- KPI 3: OCR Model Precision Rate -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Scanner OCR Precision</p>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400 mt-1" id="top-kpi-accuracy">98.2%</h3>
+                            <div class="flex items-center mt-2 text-xs text-emerald-400 font-semibold">
+                                <i class="fa-solid fa-circle-check mr-1"></i>
+                                <span>Edge AI model confidence</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400 font-mono">
+                        <span>Avg Latency: <strong class="text-slate-200">142 ms</strong></span>
+                        <span>Fallback: <strong class="text-emerald-400">1.8%</strong></span>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Active Crew & Scanner Uptime -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Crew Uptime</p>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold font-mono text-indigo-400 mt-1">99.4%</h3>
+                            <div class="flex items-center mt-2 text-xs text-indigo-400 font-semibold">
+                                <i class="fa-solid fa-users mr-1"></i>
+                                <span>18 Inspectors deployed</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-tower-cell"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400 font-mono">
+                        <span>Readings Today: <strong class="text-cyan-400">1,482</strong></span>
+                        <span>SLA Compliance: <strong class="text-emerald-400">96.8%</strong></span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Executive Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Financial Recovery Trend Line Chart -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 lg:col-span-2 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-100 flex items-center">
+                                <i class="fa-solid fa-chart-line text-cyan-400 mr-2"></i> Monthly Revenue Billed & Unmetered Recovery Trend
+                            </h3>
+                            <p class="text-xs text-slate-400">Comparing total billed utility revenue vs unmetered leakage regularization.</p>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300">Mil IDR (Rp)</span>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="chart-executive-revenue"></canvas>
+                    </div>
+                </div>
+
+                <!-- Utility Breakdown Doughnut Chart -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-100 flex items-center">
+                                <i class="fa-solid fa-chart-pie text-amber-400 mr-2"></i> Unmetered Hookup Risk Types
+                            </h3>
+                            <p class="text-xs text-slate-400">Categorization of illegal taps & bypasses.</p>
+                        </div>
+                    </div>
+                    <div class="h-64 relative flex items-center justify-center">
+                        <canvas id="chart-unmetered-breakdown"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECTION 2: MIDDLE MANAGEMENT OPERATIONAL OVERSIGHT DASHBOARD -->
+        <div id="section-middle-management" class="hidden space-y-6">
+            
+            <!-- Ops Banner -->
+            <div class="glass-card rounded-2xl p-6 border-l-4 border-l-blue-500 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30 uppercase">Operational Oversight</span>
+                        <h2 class="text-xl font-extrabold text-slate-100">Field Operations, OCR Diagnostics & Anomaly Review Queue</h2>
+                    </div>
+                    <p class="text-xs text-slate-400">Supervisor oversight tools for field crew throughput, OCR confidence logs, and anomaly audit resolution.</p>
+                </div>
+            </div>
+
+            <!-- Ops Performance Metrics Bar -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card rounded-2xl p-4 border border-slate-800">
+                    <span class="text-xs text-slate-400 uppercase font-semibold block">Pending Anomaly Reviews</span>
+                    <h4 class="text-2xl font-bold font-mono text-rose-400 mt-1" id="ops-pending-count">3 Flags</h4>
+                    <p class="text-[11px] text-slate-500 mt-1">Requires supervisor audit action</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 border border-slate-800">
+                    <span class="text-xs text-slate-400 uppercase font-semibold block">Today's Inspection Throughput</span>
+                    <h4 class="text-2xl font-bold font-mono text-cyan-400 mt-1">1,482 Scans</h4>
+                    <p class="text-[11px] text-slate-500 mt-1">Avg 82.3 scans/officer</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 border border-slate-800">
+                    <span class="text-xs text-slate-400 uppercase font-semibold block">Low OCR Confidence Scans</span>
+                    <h4 class="text-2xl font-bold font-mono text-amber-400 mt-1">12 Scans (&lt;85%)</h4>
+                    <p class="text-[11px] text-slate-500 mt-1">Manual crop override active</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 border border-slate-800">
+                    <span class="text-xs text-slate-400 uppercase font-semibold block">Regularization SLA Turnaround</span>
+                    <h4 class="text-2xl font-bold font-mono text-emerald-400 mt-1">1.8 Days</h4>
+                    <p class="text-[11px] text-slate-500 mt-1">Target &lt; 2.5 Days</p>
+                </div>
+            </div>
+
+            <!-- Ops Performance Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Officer Scan Throughput Bar Chart -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <h3 class="text-base font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-users text-cyan-400 mr-2"></i> Officer Scan Throughput (Scans / Day)
+                        </h3>
+                        <span class="text-[10px] font-mono text-slate-400">Current Shift</span>
+                    </div>
+                    <div class="h-60 relative">
+                        <canvas id="chart-ops-officer-throughput"></canvas>
+                    </div>
+                </div>
+
+                <!-- OCR Confidence Score Distribution -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <h3 class="text-base font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-brain text-emerald-400 mr-2"></i> OCR Engine Confidence Distribution
+                        </h3>
+                        <span class="text-[10px] font-mono text-slate-400">Tesseract OCR AI</span>
+                    </div>
+                    <div class="h-60 relative">
+                        <canvas id="chart-ops-ocr-confidence"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECTION 3: UNMETERED PREMISES REGULARIZATION QUEUE -->
+        <div id="section-unmetered-queue" class="hidden space-y-6">
+            
+            <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-5">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-xl font-bold text-slate-100 flex items-center">
+                                <i class="fa-solid fa-plug-circle-exclamation text-amber-400 mr-2.5"></i> Unmetered Premises & Direct Taps Register
+                            </h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                tbl_unmetered_premises
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Central audit log for illegal hookups, bypassed meters, and unmetered flat-rate regularization.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openUnmeteredModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold shadow-md transition-all flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Flag Unmetered Premise</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unmetered Filters Bar -->
+                <div class="flex flex-wrap items-center gap-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div class="relative min-w-[200px] flex-1">
+                        <input type="text" id="unmetered-search-input" oninput="renderUnmeteredTable()" placeholder="Search location, case ID, officer..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-slate-100 focus:outline-none focus:border-amber-500 font-mono">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                    </div>
+
+                    <select id="unmetered-filter-utility" onchange="renderUnmeteredTable()" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-500">
+                        <option value="ALL">All Utilities</option>
+                        <option value="PLN">PLN Electricity</option>
+                        <option value="PDAM">PDAM Water</option>
+                    </select>
+
+                    <select id="unmetered-filter-type" onchange="renderUnmeteredTable()" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-500">
+                        <option value="ALL">All Hookup Types</option>
+                        <option value="Illegal Hookup">Illegal Direct Tap</option>
+                        <option value="Bypassed Meter">Bypassed Meter</option>
+                        <option value="Flat Rate Unmetered">Flat Rate Unmetered</option>
+                    </select>
+                </div>
+
+                <!-- Unmetered Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-3">Case ID & Date</th>
+                                <th class="py-3 px-3">Utility</th>
+                                <th class="py-3 px-3">Premise Location</th>
+                                <th class="py-3 px-3">Hookup Type</th>
+                                <th class="py-3 px-3">Est. Monthly Usage</th>
+                                <th class="py-3 px-3">Est. Monthly Loss</th>
+                                <th class="py-3 px-3">Field Officer (FK)</th>
+                                <th class="py-3 px-3">Status</th>
+                                <th class="py-3 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unmetered-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECTION 4: LIVE DATABASE READER (`tbl_meter_readings`) -->
+        <div id="section-live-db" class="hidden space-y-6">
+            
+            <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-5">
+                
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-xl font-bold text-slate-100 flex items-center">
+                                <i class="fa-solid fa-table-list text-cyan-400 mr-2.5"></i> Live Database Reader
+                            </h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                                tbl_meter_readings
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Direct read-access to field OCR scans, customer ID numbers, stand readings, and foreign key relations.</p>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        
+                        <div class="relative min-w-[200px]">
+                            <input type="text" id="reader-search-input" oninput="renderReaderDatabaseTable()" placeholder="Search IDPEL, Officer, ID..." class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                        </div>
+
+                        <select id="reader-filter-utility" onchange="renderReaderDatabaseTable()" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-500">
+                            <option value="ALL">All Utilities</option>
+                            <option value="PLN">PLN Electricity</option>
+                            <option value="PDAM">PDAM Water</option>
+                        </select>
+
+                        <select id="reader-filter-status" onchange="renderReaderDatabaseTable()" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-500">
+                            <option value="ALL">All Statuses</option>
+                            <option value="VALID">VALID Only</option>
+                            <option value="ANOMALY">ANOMALY / FLAG Only</option>
+                        </select>
+
+                        <button onclick="exportDatabaseCSV()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700 transition-all flex items-center">
+                            <i class="fa-solid fa-file-csv mr-1.5 text-emerald-400"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Database Live Counter Banner -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono">
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase">Records Shown:</span>
+                        <span id="counter-shown-records" class="font-bold text-cyan-400 text-sm">0</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase">Total Metered Volume:</span>
+                        <span id="counter-total-volume" class="font-bold text-emerald-400 text-sm">0 Units</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase">Est. Financial Yield:</span>
+                        <span id="counter-total-yield" class="font-bold text-amber-400 text-sm">Rp 0</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase">Anomalies Detected:</span>
+                        <span id="counter-anomalies" class="font-bold text-rose-400 text-sm">0 Flags</span>
+                    </div>
+                </div>
+
+                <!-- Database Data Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-3">Reading ID & Time</th>
+                                <th class="py-3 px-3">Type</th>
+                                <th class="py-3 px-3">Customer ID (IDPEL)</th>
+                                <th class="py-3 px-3">Stand Reading</th>
+                                <th class="py-3 px-3">Usage Delta</th>
+                                <th class="py-3 px-3">Est. Cost Tariff</th>
+                                <th class="py-3 px-3">Field Officer (FK)</th>
+                                <th class="py-3 px-3">OCR Confidence</th>
+                                <th class="py-3 px-3">Status</th>
+                                <th class="py-3 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reader-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECTION 5: FIELD OFFICER DIRECTORY (`tbl_employees`) -->
+        <div id="section-officers" class="hidden space-y-6">
+            
+            <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-users-gear text-indigo-400 mr-2.5"></i> Field Inspector Roster & Efficiency Metrics
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Cross-referencing officer identity from <code class="text-emerald-400 font-mono">tbl_employees</code> with field inspection throughput.</p>
+                    </div>
+
+                    <button onclick="openRegisterOfficerModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md transition-all flex items-center">
+                        <i class="fa-solid fa-user-plus mr-2"></i> Register New Officer
+                    </button>
+                </div>
+
+                <!-- Officer Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="officers-cards-container">
+                    <!-- Dynamic Officer Roster Cards -->
+                </div>
+
+                <!-- Roster Data Table -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs font-bold font-mono text-cyan-400 flex items-center">
+                        <i class="fa-solid fa-address-book mr-2"></i> Employee Master Directory (`tbl_employees`)
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-slate-900 text-slate-400 uppercase text-[10px]">
+                                <tr>
+                                    <th class="py-2.5 px-3">emp_id</th>
+                                    <th class="py-2.5 px-3">full_name</th>
+                                    <th class="py-2.5 px-3">department</th>
+                                    <th class="py-2.5 px-3">utility_type</th>
+                                    <th class="py-2.5 px-3">role</th>
+                                    <th class="py-2.5 px-3 text-right">Readings Logged</th>
+                                </tr>
+                            </thead>
+                            <tbody id="officers-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECTION 6: INTERACTIVE SQL QUERY CONSOLE -->
+        <div id="section-query-console" class="hidden space-y-6">
+            
+            <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-6">
+                
+                <div class="border-b border-slate-800 pb-4">
+                    <h2 class="text-xl font-bold text-slate-100 flex items-center">
+                        <i class="fa-solid fa-code text-cyan-400 mr-2.5"></i> Interactive SQL Query Simulator & Database Schema
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Execute SQL queries against in-memory utility tables (<code class="text-cyan-300 font-mono">tbl_meter_readings</code>, <code class="text-amber-300 font-mono">tbl_unmetered_premises</code>, <code class="text-emerald-300 font-mono">tbl_employees</code>).</p>
+                </div>
+
+                <!-- Preset Queries Toolbox -->
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="text-slate-400 font-semibold flex items-center mr-2"><i class="fa-solid fa-bolt text-amber-400 mr-1"></i> Quick Presets:</span>
+                    <button onclick="loadQueryPreset(1)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-cyan-300">
+                        SELECT Flagged Anomalies
+                    </button>
+                    <button onclick="loadQueryPreset(2)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-emerald-300">
+                        JOIN Meter Readings + Officers
+                    </button>
+                    <button onclick="loadQueryPreset(3)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-amber-300">
+                        GROUP BY Utility Unmetered Loss
+                    </button>
+                </div>
+
+                <!-- Query Editor Area -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 font-mono">
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span>SQL Query Input Box:</span>
+                        <span class="text-emerald-400">Read-Only Safety Lock Active</span>
+                    </div>
+                    <textarea id="sql-query-textarea" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 leading-relaxed">SELECT reading_id, utility_type, customer_id, stand_reading, usage_delta, est_cost, validation_status FROM tbl_meter_readings WHERE anomaly_flag = true ORDER BY timestamp DESC;</textarea>
+                    
+                    <div class="flex justify-end space-x-2">
+                        <button onclick="executeConsoleQuery()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-md transition-all flex items-center">
+                            <i class="fa-solid fa-play mr-2"></i> Execute Query
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Query Results Stream -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center text-xs font-mono">
+                        <span class="text-slate-400">Query Output Stream:</span>
+                        <span id="query-exec-time" class="text-slate-500">Execution time: 0.03 ms</span>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-slate-800">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-slate-900 text-slate-400 uppercase text-[10px]" id="query-result-head">
+                                <!-- Dynamic Headers -->
+                            </thead>
+                            <tbody id="query-result-body" class="divide-y divide-slate-800/60 text-slate-300">
+                                <!-- Dynamic Query Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: RECORD INSPECTION & ANOMALY OVERRIDE MODAL -->
+    <div id="modal-record-inspect" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative overflow-hidden space-y-5">
+            
+            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-lg font-bold text-slate-100" id="inspect-modal-id">MTR-20260908-001</h3>
+                            <span id="inspect-modal-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">VALID</span>
+                        </div>
+                        <p class="text-xs text-slate-400" id="inspect-modal-time">Logged on 2026-09-08 08:30:12</p>
+                    </div>
+                </div>
+                <button onclick="closeInspectModal()" class="text-slate-400 hover:text-white text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Inspect Content Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                
+                <!-- Simulated OCR Camera Snapshot -->
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-3">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Captured OCR Camera Crop</span>
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col items-center justify-center h-36 relative overflow-hidden">
+                        <div class="text-slate-500 text-[10px] mb-1 uppercase tracking-widest font-bold" id="inspect-photo-type">PLN ELECTRICITY METER</div>
+                        <div class="text-3xl font-extrabold font-mono text-cyan-400 tracking-widest" id="inspect-photo-digits">014925</div>
+                        <div class="text-[10px] text-slate-500 mt-2">IDPEL: <span id="inspect-photo-idpel" class="text-slate-300">541100234182</span></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>OCR Confidence: <strong id="inspect-photo-confidence" class="text-emerald-400">98.4%</strong></span>
+                        <span>GPS: <strong class="text-cyan-400">-6.2088, 106.8456</strong></span>
+                    </div>
+                </div>
+
+                <!-- Billing Breakdown -->
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-3">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Billing & Usage Delta</span>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between py-1 border-b border-slate-800">
+                            <span class="text-slate-400">Utility Type:</span>
+                            <strong id="inspect-utility" class="text-cyan-400">PLN Electricity</strong>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-800">
+                            <span class="text-slate-400">Previous Reading:</span>
+                            <span id="inspect-prev" class="text-slate-200">14,680 kWh</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-800">
+                            <span class="text-slate-400">Current Reading:</span>
+                            <span id="inspect-curr" class="text-amber-400 font-bold">14,925 kWh</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-800">
+                            <span class="text-slate-400">Usage Delta:</span>
+                            <span id="inspect-delta" class="text-emerald-400 font-bold">+245 kWh</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-800">
+                            <span class="text-slate-400">Calculated Tariff:</span>
+                            <strong id="inspect-cost" class="text-amber-400 text-sm">Rp 353.951</strong>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-slate-400">Field Inspector (FK):</span>
+                            <span id="inspect-officer" class="text-cyan-300">EMP-1001 (Budi)</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Management Override Controls -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <span class="text-xs font-bold text-amber-400 flex items-center">
+                    <i class="fa-solid fa-user-shield mr-1.5"></i> Supervisor Verification Action
+                </span>
+                <p class="text-[11px] text-slate-400">Management can approve flagged records or submit them for fraud investigation.</p>
+                
+                <div class="flex flex-wrap gap-2 pt-2">
+                    <button onclick="approveAnomalyRecord()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center">
+                        <i class="fa-solid fa-check-circle mr-1.5"></i> Mark Valid & Approved
+                    </button>
+                    <button onclick="flagFraudRecord()" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Flag Meter Fraud / Bypass
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL 2: REGISTER NEW OFFICER -->
+    <div id="modal-register-officer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-user-plus text-emerald-400 mr-2"></i> Register Field Officer
+                </h3>
+                <button onclick="closeRegisterOfficerModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="handleOfficerSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Employee ID (emp_id):</label>
+                    <input type="text" id="new-officer-id" required placeholder="e.g. EMP-1006" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Full Name:</label>
+                    <input type="text" id="new-officer-name" required placeholder="e.g. Maya Indah" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Utility Division:</label>
+                    <select id="new-officer-dept" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                        <option value="PLN">PLN Electricity Inspection</option>
+                        <option value="PDAM">PDAM Water Meter Operations</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Role Permission:</label>
+                    <select id="new-officer-role" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                        <option value="Field Inspector">Field Inspector</option>
+                        <option value="Meter Reader">Meter Reader</option>
+                        <option value="Supervisor">Supervisor</option>
+                    </select>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg transition-all">
+                        Save to tbl_employees
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: FLAG UNMETERED PREMISE -->
+    <div id="modal-add-unmetered" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-plug-circle-exclamation text-amber-400 mr-2"></i> Flag Unmetered / Illegal Premise
+                </h3>
+                <button onclick="closeUnmeteredModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="handleUnmeteredSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Utility Service:</label>
+                    <select id="new-unmetered-utility" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none">
+                        <option value="PLN">PLN Electricity Connection</option>
+                        <option value="PDAM">PDAM Water Supply</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Premise Address / Description:</label>
+                    <input type="text" id="new-unmetered-address" required placeholder="e.g. Jl. Sudirman No. 45 B, Commercial Ruko" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Classification Type:</label>
+                    <select id="new-unmetered-type" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none">
+                        <option value="Illegal Hookup">Illegal Direct Tap / TDL Violation</option>
+                        <option value="Bypassed Meter">Bypassed Meter / Wire Tamper</option>
+                        <option value="Flat Rate Unmetered">Flat Rate Unmetered Temporary</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Est. Monthly Loss (Rp):</label>
+                    <input type="number" id="new-unmetered-loss" required placeholder="e.g. 4500000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Assigned Inspector (FK):</label>
+                    <select id="new-unmetered-officer" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none">
+                        <option value="EMP-1001">EMP-1001 (Budi Santoso)</option>
+                        <option value="EMP-1002">EMP-1002 (Siti Rahma)</option>
+                        <option value="EMP-1004">EMP-1004 (Dewi Lestari)</option>
+                        <option value="EMP-1005">EMP-1005 (Agus Pratama)</option>
+                    </select>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold text-xs shadow-lg transition-all">
+                        Save to tbl_unmetered_premises
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        /**
+         * IN-MEMORY SEPARATED MANAGEMENT UTILITY DATABASE
+         */
+        const DB_EMPLOYEES = [
+            { emp_id: "EMP-1001", full_name: "Budi Santoso", department: "PLN Electricity Inspection", utility_type: "PLN", role: "Field Inspector", readings_logged: 48 },
+            { emp_id: "EMP-1002", full_name: "Siti Rahma", department: "PDAM Water Meter Operations", utility_type: "PDAM", role: "Meter Reader", readings_logged: 32 },
+            { emp_id: "EMP-1003", full_name: "Rahmat Hidayat", department: "Regional Audit Supervisor", utility_type: "PLN", role: "Supervisor", readings_logged: 12 },
+            { emp_id: "EMP-1004", full_name: "Dewi Lestari", department: "PLN Electricity Inspection", utility_type: "PLN", role: "Field Inspector", readings_logged: 54 },
+            { emp_id: "EMP-1005", full_name: "Agus Pratama", department: "PDAM Water Meter Operations", utility_type: "PDAM", role: "Meter Reader", readings_logged: 41 }
+        ];
+
+        let DB_UNMETERED_PREMISES = [
+            { unmetered_id: "UNM-20260908-01", date_reported: "2026-09-08 07:45", utility_type: "PLN", address: "Jl. Gatot Subroto No. 128, Block B", hookup_type: "Illegal Hookup", est_monthly_units: "1,450 kWh", est_loss_rp: 2102500, officer_id: "EMP-1001", status: "PENDING_AUDIT" },
+            { unmetered_id: "UNM-20260908-02", date_reported: "2026-09-07 14:20", utility_type: "PDAM", address: "Kawasan Industri Pulo Gadung Kav 12", hookup_type: "Bypassed Meter", est_monthly_units: "180 m³", est_loss_rp: 756000, officer_id: "EMP-1002", status: "METER_SCHEDULED" },
+            { unmetered_id: "UNM-20260906-03", date_reported: "2026-09-06 11:10", utility_type: "PLN", address: "Pasar Kebayoran Lama Kios No. 44", hookup_type: "Flat Rate Unmetered", est_monthly_units: "850 kWh", est_loss_rp: 1232500, officer_id: "EMP-1004", status: "LEGALIZED" },
+            { unmetered_id: "UNM-20260905-04", date_reported: "2026-09-05 09:30", utility_type: "PLN", address: "Jl. Raya Bogor KM 22, Resto Depan", hookup_type: "Illegal Hookup", est_monthly_units: "3,200 kWh", est_loss_rp: 4640000, officer_id: "EMP-1001", status: "DISCONNECT_NOTICE" },
+            { unmetered_id: "UNM-20260904-05", date_reported: "2026-09-04 16:05", utility_type: "PDAM", address: "Jl. Mangga Besar IX No. 88", hookup_type: "Flat Rate Unmetered", est_monthly_units: "95 m³", est_loss_rp: 399000, officer_id: "EMP-1005", status: "METER_SCHEDULED" }
+        ];
+
+        let DB_METER_READINGS = [
+            { reading_id: "MTR-20260908-001", timestamp: "2026-09-08 08:30:12", utility_type: "PLN", customer_id: "541100234182", stand_reading: "014925", previous_reading: 14680, usage_delta: 245, unit: "kWh", est_cost: 353951, officer_id: "EMP-1001", validation_status: "VALID", anomaly_flag: false, confidence: 98.4 },
+            { reading_id: "MTR-20260908-002", timestamp: "2026-09-08 09:15:45", utility_type: "PDAM", customer_id: "09234182", stand_reading: "008420", previous_reading: 8392, usage_delta: 28, unit: "m³", est_cost: 117600, officer_id: "EMP-1002", validation_status: "VALID", anomaly_flag: false, confidence: 97.8 },
+            { reading_id: "MTR-20260908-003", timestamp: "2026-09-08 10:02:11", utility_type: "PLN", customer_id: "541100881299", stand_reading: "031200", previous_reading: 28000, usage_delta: 3200, unit: "kWh", est_cost: 4623040, officer_id: "EMP-1001", validation_status: "ANOMALY", anomaly_flag: true, confidence: 99.1 },
+            { reading_id: "MTR-20260908-004", timestamp: "2026-09-08 11:20:00", utility_type: "PDAM", customer_id: "09238811", stand_reading: "004112", previous_reading: 4090, usage_delta: 22, unit: "m³", est_cost: 92400, officer_id: "EMP-1005", validation_status: "VALID", anomaly_flag: false, confidence: 96.5 },
+            { reading_id: "MTR-20260908-005", timestamp: "2026-09-08 12:05:30", utility_type: "PLN", customer_id: "541100994821", stand_reading: "028410", previous_reading: 28150, usage_delta: 260, unit: "kWh", est_cost: 375622, officer_id: "EMP-1004", validation_status: "VALID", anomaly_flag: false, confidence: 98.9 },
+            { reading_id: "MTR-20260908-006", timestamp: "2026-09-08 13:40:19", utility_type: "PLN", customer_id: "541100112233", stand_reading: "009210", previous_reading: 10500, usage_delta: 0, unit: "kWh", est_cost: 0, officer_id: "EMP-1004", validation_status: "ANOMALY", anomaly_flag: true, confidence: 95.2 },
+            { reading_id: "MTR-20260908-007", timestamp: "2026-09-08 14:10:05", utility_type: "PDAM", customer_id: "09239922", stand_reading: "001250", previous_reading: 1210, usage_delta: 40, unit: "m³", est_cost: 168000, officer_id: "EMP-1002", validation_status: "VALID", anomaly_flag: false, confidence: 98.1 }
+        ];
+
+        // System State Variables
+        let currentRole = 'TOP'; // TOP or MIDDLE
+        let activeMainTab = 'dashboard';
+        let activeInspectRecord = null;
+        let chartExecutiveRevenue = null;
+        let chartUnmeteredBreakdown = null;
+        let chartOfficerThroughput = null;
+        let chartOcrConfidence = null;
+
+        // Initialize Application on Window Load
+        window.addEventListener('load', () => {
+            initCharts();
+            refreshAllViews();
+            showToast("Management Portal v4.0 Connected to Tri-DB Stream", "success");
+        });
+
+        function switchManagementRole(role) {
+            currentRole = role;
+            const topBtn = document.getElementById('role-btn-top');
+            const midBtn = document.getElementById('role-btn-middle');
+            const dashLabel = document.getElementById('tab-dashboard-label');
+
+            if (role === 'TOP') {
+                topBtn.className = "px-3 py-1.5 rounded-lg bg-cyan-600 text-white shadow-md transition-all flex items-center space-x-1.5";
+                midBtn.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center space-x-1.5";
+                dashLabel.innerText = "Top Exec Dashboard";
+                document.getElementById('section-top-management').classList.remove('hidden');
+                document.getElementById('section-middle-management').classList.add('hidden');
+            } else {
+                midBtn.className = "px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow-md transition-all flex items-center space-x-1.5";
+                topBtn.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center space-x-1.5";
+                dashLabel.innerText = "Middle Ops Dashboard";
+                document.getElementById('section-middle-management').classList.remove('hidden');
+                document.getElementById('section-top-management').classList.add('hidden');
+            }
+
+            if (activeMainTab !== 'dashboard') {
+                switchMainTab('dashboard');
+            }
+        }
+
+        function switchMainTab(tabId) {
+            activeMainTab = tabId;
+            const tabs = ['dashboard', 'unmetered', 'db', 'officers', 'query'];
+
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (btn) {
+                    if (t === tabId) {
+                        btn.className = "px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md transition-all font-semibold";
+                    } else {
+                        btn.className = "px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 transition-all font-semibold";
+                    }
+                }
+            });
+
+            // Toggle Section Visibility
+            document.getElementById('section-top-management').classList.add('hidden');
+            document.getElementById('section-middle-management').classList.add('hidden');
+            document.getElementById('section-unmetered-queue').classList.add('hidden');
+            document.getElementById('section-live-db').classList.add('hidden');
+            document.getElementById('section-officers').classList.add('hidden');
+            document.getElementById('section-query-console').classList.add('hidden');
+
+            if (tabId === 'dashboard') {
+                if (currentRole === 'TOP') {
+                    document.getElementById('section-top-management').classList.remove('hidden');
+                } else {
+                    document.getElementById('section-middle-management').classList.remove('hidden');
+                }
+            } else if (tabId === 'unmetered') {
+                document.getElementById('section-unmetered-queue').classList.remove('hidden');
+                renderUnmeteredTable();
+            } else if (tabId === 'db') {
+                document.getElementById('section-live-db').classList.remove('hidden');
+                renderReaderDatabaseTable();
+            } else if (tabId === 'officers') {
+                document.getElementById('section-officers').classList.remove('hidden');
+                renderOfficerCards();
+            } else if (tabId === 'query') {
+                document.getElementById('section-query-console').classList.remove('hidden');
+                executeConsoleQuery();
+            }
+        }
+
+        function refreshAllViews() {
+            renderUnmeteredTable();
+            renderReaderDatabaseTable();
+            renderOfficerCards();
+            updateChartData();
+        }
+
+        function initCharts() {
+            // Chart 1: Executive Revenue Line Chart
+            const ctxRev = document.getElementById('chart-executive-revenue')?.getContext('2d');
+            if (ctxRev) {
+                chartExecutiveRevenue = new Chart(ctxRev, {
+                    type: 'line',
+                    data: {
+                        labels: ['May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026 (Est)'],
+                        datasets: [
+                            {
+                                label: 'PLN Billed Revenue (Million Rp)',
+                                data: [4200, 4650, 4900, 5100, 5352],
+                                borderColor: '#38BDF8',
+                                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'PDAM Water Billed (Million Rp)',
+                                data: [310, 330, 350, 365, 378],
+                                borderColor: '#60A5FA',
+                                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Unmetered Leakage Recovered (Million Rp)',
+                                data: [45, 82, 110, 155, 184.5],
+                                borderColor: '#F59E0B',
+                                borderDash: [5, 5],
+                                backgroundColor: 'transparent',
+                                tension: 0.2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 11 } } }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94A3B8' } },
+                            y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94A3B8' } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 2: Unmetered Risk Doughnut
+            const ctxUnm = document.getElementById('chart-unmetered-breakdown')?.getContext('2d');
+            if (ctxUnm) {
+                chartUnmeteredBreakdown = new Chart(ctxUnm, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Illegal Direct Tap', 'Bypassed Wire/Pipe', 'Flat Rate Temporary'],
+                        datasets: [{
+                            data: [28, 10, 14],
+                            backgroundColor: ['#F43F5E', '#F59E0B', '#06B6D4'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 3: Officer Throughput Bar
+            const ctxThr = document.getElementById('chart-ops-officer-throughput')?.getContext('2d');
+            if (ctxThr) {
+                chartOfficerThroughput = new Chart(ctxThr, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Budi S. (EMP-1001)', 'Siti R. (EMP-1002)', 'Rahmat H. (EMP-1003)', 'Dewi L. (EMP-1004)', 'Agus P. (EMP-1005)'],
+                        datasets: [{
+                            label: 'Scans Logged Today',
+                            data: [48, 32, 12, 54, 41],
+                            backgroundColor: '#0284C7',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } },
+                            y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94A3B8' } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 4: OCR Confidence Distribution
+            const ctxOcr = document.getElementById('chart-ops-ocr-confidence')?.getContext('2d');
+            if (ctxOcr) {
+                chartOcrConfidence = new Chart(ctxOcr, {
+                    type: 'line',
+                    data: {
+                        labels: ['90%-92%', '93%-95%', '96%-97%', '98%-99%', '100%'],
+                        datasets: [{
+                            label: 'Scans Count',
+                            data: [12, 45, 180, 890, 355],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94A3B8' } },
+                            y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94A3B8' } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateChartData() {
+            // Re-render chart instances if needed
+            if (chartOfficerThroughput) {
+                chartOfficerThroughput.data.datasets[0].data = DB_EMPLOYEES.map(e => e.readings_logged);
+                chartOfficerThroughput.update();
+            }
+        }
+
+        function renderReaderDatabaseTable() {
+            const tbody = document.getElementById('reader-table-body');
+            if (!tbody) return;
+
+            const query = (document.getElementById('reader-search-input')?.value || '').toLowerCase();
+            const filterUtil = document.getElementById('reader-filter-utility')?.value || 'ALL';
+            const filterStatus = document.getElementById('reader-filter-status')?.value || 'ALL';
+
+            const filtered = DB_METER_READINGS.filter(m => {
+                const matchQuery = m.reading_id.toLowerCase().includes(query) ||
+                                   m.customer_id.toLowerCase().includes(query) ||
+                                   m.officer_id.toLowerCase().includes(query);
+                const matchUtil = filterUtil === 'ALL' || m.utility_type === filterUtil;
+                const matchStatus = filterStatus === 'ALL' || 
+                                    (filterStatus === 'ANOMALY' && m.anomaly_flag) ||
+                                    (filterStatus === 'VALID' && !m.anomaly_flag);
+                return matchQuery && matchUtil && matchStatus;
+            });
+
+            const totalVol = filtered.reduce((acc, curr) => acc + curr.usage_delta, 0);
+            const totalYield = filtered.reduce((acc, curr) => acc + curr.est_cost, 0);
+            const anomalyCount = filtered.filter(m => m.anomaly_flag).length;
+
+            if (document.getElementById('counter-shown-records')) document.getElementById('counter-shown-records').innerText = filtered.length;
+            if (document.getElementById('counter-total-volume')) document.getElementById('counter-total-volume').innerText = `${totalVol.toLocaleString()} Units`;
+            if (document.getElementById('counter-total-yield')) document.getElementById('counter-total-yield').innerText = `Rp ${totalYield.toLocaleString('id-ID')}`;
+            if (document.getElementById('counter-anomalies')) document.getElementById('counter-anomalies').innerText = `${anomalyCount} Flags`;
+
+            tbody.innerHTML = filtered.map(m => {
+                const badgeClass = m.anomaly_flag ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                
+                return `
+                    <tr class="hover:bg-slate-900/80 transition-all">
+                        <td class="py-2.5 px-3">
+                            <div class="font-bold text-cyan-400">${m.reading_id}</div>
+                            <div class="text-[10px] text-slate-500">${m.timestamp}</div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.utility_type==='PLN'?'bg-cyan-500/20 text-cyan-300':'bg-blue-500/20 text-blue-300'}">${m.utility_type}</span>
+                        </td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-200">${m.customer_id}</td>
+                        <td class="py-2.5 px-3 font-mono text-amber-300 font-bold">${m.stand_reading}</td>
+                        <td class="py-2.5 px-3 font-mono text-emerald-400">+${m.usage_delta} ${m.unit}</td>
+                        <td class="py-2.5 px-3 font-bold text-slate-200">Rp ${m.est_cost.toLocaleString('id-ID')}</td>
+                        <td class="py-2.5 px-3 text-cyan-300">${m.officer_id}</td>
+                        <td class="py-2.5 px-3 font-bold text-emerald-400">${m.confidence}%</td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${m.validation_status}</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-right">
+                            <button onclick="inspectRecord('${m.reading_id}')" class="px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 text-[11px] border border-cyan-500/30 transition-all">
+                                <i class="fa-solid fa-eye mr-1"></i> Inspect
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderUnmeteredTable() {
+            const tbody = document.getElementById('unmetered-table-body');
+            if (!tbody) return;
+
+            const searchQuery = (document.getElementById('unmetered-search-input')?.value || '').toLowerCase();
+            const filterUtility = document.getElementById('unmetered-filter-utility')?.value || 'ALL';
+            const filterType = document.getElementById('unmetered-filter-type')?.value || 'ALL';
+
+            const filtered = DB_UNMETERED_PREMISES.filter(u => {
+                const matchSearch = u.address.toLowerCase().includes(searchQuery) ||
+                                    u.unmetered_id.toLowerCase().includes(searchQuery) ||
+                                    u.officer_id.toLowerCase().includes(searchQuery);
+                const matchUtil = filterUtility === 'ALL' || u.utility_type === filterUtility;
+                const matchType = filterType === 'ALL' || u.hookup_type === filterType;
+                return matchSearch && matchUtil && matchType;
+            });
+
+            tbody.innerHTML = filtered.map(u => {
+                let statusBadge = 'bg-slate-800 text-slate-300';
+                if (u.status === 'PENDING_AUDIT') statusBadge = 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                if (u.status === 'METER_SCHEDULED') statusBadge = 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+                if (u.status === 'LEGALIZED') statusBadge = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                if (u.status === 'DISCONNECT_NOTICE') statusBadge = 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+
+                return `
+                    <tr class="hover:bg-slate-900/80 transition-all">
+                        <td class="py-2.5 px-3">
+                            <div class="font-bold text-amber-400">${u.unmetered_id}</div>
+                            <div class="text-[10px] text-slate-500">${u.date_reported}</div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.utility_type==='PLN'?'bg-cyan-500/20 text-cyan-300':'bg-blue-500/20 text-blue-300'}">${u.utility_type}</span>
+                        </td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-200">${u.address}</td>
+                        <td class="py-2.5 px-3">
+                            <span class="text-xs font-bold ${u.hookup_type==='Illegal Hookup'?'text-rose-400':'text-amber-300'}">${u.hookup_type}</span>
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-cyan-300">${u.est_monthly_units}</td>
+                        <td class="py-2.5 px-3 font-bold text-rose-400">Rp ${u.est_loss_rp.toLocaleString('id-ID')}</td>
+                        <td class="py-2.5 px-3 text-cyan-400">${u.officer_id}</td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${statusBadge}">
+                                ${u.status}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-right">
+                            <button onclick="scheduleMeterization('${u.unmetered_id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 text-[11px] border border-emerald-500/30 transition-all mr-1">
+                                <i class="fa-solid fa-wrench mr-1"></i> Convert to Meter
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderOfficerCards() {
+            const container = document.getElementById('officers-cards-container');
+            const tableBody = document.getElementById('officers-table-body');
+            
+            if (container) {
+                container.innerHTML = DB_EMPLOYEES.map(emp => `
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold">
+                                    ${emp.full_name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-100 text-sm">${emp.full_name}</h4>
+                                    <p class="text-[10px] text-slate-400 font-mono">${emp.emp_id} • ${emp.role}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${emp.utility_type === 'PLN' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-blue-500/20 text-blue-300'}">${emp.utility_type}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs font-mono pt-2 border-t border-slate-900">
+                            <span class="text-slate-400">Total Scans Logged:</span>
+                            <strong class="text-emerald-400">${emp.readings_logged} Inspections</strong>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            if (tableBody) {
+                tableBody.innerHTML = DB_EMPLOYEES.map(emp => `
+                    <tr class="hover:bg-slate-900/80 transition-all">
+                        <td class="py-2.5 px-3 font-bold text-cyan-400">${emp.emp_id}</td>
+                        <td class="py-2.5 px-3 text-slate-100 font-bold">${emp.full_name}</td>
+                        <td class="py-2.5 px-3 text-slate-400">${emp.department}</td>
+                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${emp.utility_type==='PLN'?'bg-cyan-500/20 text-cyan-300':'bg-blue-500/20 text-blue-300'}">${emp.utility_type}</span></td>
+                        <td class="py-2.5 px-3 text-slate-300">${emp.role}</td>
+                        <td class="py-2.5 px-3 text-right font-bold text-emerald-400">${emp.readings_logged}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function loadQueryPreset(type) {
+            const textarea = document.getElementById('sql-query-textarea');
+            if (type === 1) {
+                textarea.value = `SELECT reading_id, utility_type, customer_id, stand_reading, usage_delta, est_cost, validation_status FROM tbl_meter_readings WHERE anomaly_flag = true ORDER BY timestamp DESC;`;
+            } else if (type === 2) {
+                textarea.value = `SELECT m.reading_id, m.customer_id, m.stand_reading, m.officer_id, e.full_name, e.department FROM tbl_meter_readings m JOIN tbl_employees e ON m.officer_id = e.emp_id;`;
+            } else if (type === 3) {
+                textarea.value = `SELECT utility_type, COUNT(*) as unmetered_cases, SUM(est_loss_rp) as total_monthly_loss FROM tbl_unmetered_premises GROUP BY utility_type;`;
+            }
+            executeConsoleQuery();
+        }
+
+        function executeConsoleQuery() {
+            const query = document.getElementById('sql-query-textarea').value.trim();
+            const head = document.getElementById('query-result-head');
+            const body = document.getElementById('query-result-body');
+
+            if (query.includes('tbl_unmetered_premises')) {
+                head.innerHTML = `<tr><th class="py-2 px-3">utility_type</th><th class="py-2 px-3">unmetered_cases</th><th class="py-2 px-3">total_monthly_loss (Rp)</th></tr>`;
+                body.innerHTML = `
+                    <tr><td class="py-2 px-3 text-cyan-400 font-bold">PLN Electricity</td><td class="py-2 px-3 font-bold">28 Cases</td><td class="py-2 px-3 text-rose-400 font-bold">Rp 142.000.000</td></tr>
+                    <tr><td class="py-2 px-3 text-blue-400 font-bold">PDAM Water</td><td class="py-2 px-3 font-bold">14 Cases</td><td class="py-2 px-3 text-rose-400 font-bold">Rp 42.500.000</td></tr>
+                `;
+            } else if (query.includes('JOIN tbl_employees')) {
+                head.innerHTML = `<tr><th class="py-2 px-3">reading_id</th><th class="py-2 px-3">customer_id</th><th class="py-2 px-3">officer_id</th><th class="py-2 px-3">full_name</th><th class="py-2 px-3">department</th></tr>`;
+                body.innerHTML = DB_METER_READINGS.slice(0, 5).map(m => {
+                    const emp = DB_EMPLOYEES.find(e => e.emp_id === m.officer_id) || { full_name: 'Budi Santoso', department: 'PLN Inspection' };
+                    return `<tr><td class="py-2 px-3 text-cyan-400 font-bold">${m.reading_id}</td><td class="py-2 px-3">${m.customer_id}</td><td class="py-2 px-3 text-amber-400">${m.officer_id}</td><td class="py-2 px-3 text-slate-200 font-bold">${emp.full_name}</td><td class="py-2 px-3 text-slate-400">${emp.department}</td></tr>`;
+                }).join('');
+            } else {
+                head.innerHTML = `<tr><th class="py-2 px-3">reading_id</th><th class="py-2 px-3">utility</th><th class="py-2 px-3">customer_id</th><th class="py-2 px-3">stand</th><th class="py-2 px-3">usage</th><th class="py-2 px-3">est_cost</th><th class="py-2 px-3">status</th></tr>`;
+                body.innerHTML = DB_METER_READINGS.filter(m => m.anomaly_flag).map(m => `
+                    <tr><td class="py-2 px-3 text-cyan-400 font-bold">${m.reading_id}</td><td class="py-2 px-3">${m.utility_type}</td><td class="py-2 px-3">${m.customer_id}</td><td class="py-2 px-3 text-amber-400">${m.stand_reading}</td><td class="py-2 px-3 text-emerald-400">+${m.usage_delta}</td><td class="py-2 px-3">Rp ${m.est_cost.toLocaleString('id-ID')}</td><td class="py-2 px-3 text-rose-400 font-bold">${m.validation_status}</td></tr>
+                `).join('');
+            }
+
+            document.getElementById('query-exec-time').innerText = `Execution time: ${(Math.random() * 0.04 + 0.02).toFixed(2)} ms`;
+        }
+
+        function inspectRecord(readingId) {
+            const record = DB_METER_READINGS.find(m => m.reading_id === readingId);
+            if (!record) return;
+            activeInspectRecord = record;
+
+            document.getElementById('inspect-modal-id').innerText = record.reading_id;
+            document.getElementById('inspect-modal-time').innerText = `Logged on ${record.timestamp}`;
+            
+            const badge = document.getElementById('inspect-modal-badge');
+            if (badge) {
+                badge.innerText = record.validation_status;
+                badge.className = `px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${record.anomaly_flag ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}`;
+            }
+
+            document.getElementById('inspect-photo-type').innerText = `${record.utility_type} METER READING`;
+            document.getElementById('inspect-photo-digits').innerText = record.stand_reading;
+            document.getElementById('inspect-photo-idpel').innerText = record.customer_id;
+            document.getElementById('inspect-photo-confidence').innerText = `${record.confidence}%`;
+
+            document.getElementById('inspect-utility').innerText = record.utility_type === 'PLN' ? 'PLN Electricity' : 'PDAM Water';
+            document.getElementById('inspect-prev').innerText = `${record.previous_reading.toLocaleString()} ${record.unit}`;
+            document.getElementById('inspect-curr').innerText = `${record.stand_reading} ${record.unit}`;
+            document.getElementById('inspect-delta').innerText = `+${record.usage_delta} ${record.unit}`;
+            document.getElementById('inspect-cost').innerText = `Rp ${record.est_cost.toLocaleString('id-ID')}`;
+            
+            const officer = DB_EMPLOYEES.find(e => e.emp_id === record.officer_id);
+            document.getElementById('inspect-officer').innerText = `${record.officer_id} (${officer ? officer.full_name : 'Inspector'})`;
+
+            document.getElementById('modal-record-inspect').classList.remove('hidden');
+        }
+
+        function closeInspectModal() {
+            document.getElementById('modal-record-inspect').classList.add('hidden');
+            activeInspectRecord = null;
+        }
+
+        function approveAnomalyRecord() {
+            if (!activeInspectRecord) return;
+            activeInspectRecord.anomaly_flag = false;
+            activeInspectRecord.validation_status = 'VALID';
+            renderReaderDatabaseTable();
+            closeInspectModal();
+            showToast(`Record ${activeInspectRecord.reading_id} validated & approved`, "success");
+        }
+
+        function flagFraudRecord() {
+            if (!activeInspectRecord) return;
+            activeInspectRecord.anomaly_flag = true;
+            activeInspectRecord.validation_status = 'FRAUD_INVESTIGATION';
+            renderReaderDatabaseTable();
+            closeInspectModal();
+            showToast(`Record ${activeInspectRecord.reading_id} flagged for fraud investigation!`, "error");
+        }
+
+        function openRegisterOfficerModal() {
+            document.getElementById('modal-register-officer').classList.remove('hidden');
+        }
+
+        function closeRegisterOfficerModal() {
+            document.getElementById('modal-register-officer').classList.add('hidden');
+        }
+
+        function handleOfficerSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('new-officer-id').value.trim();
+            const name = document.getElementById('new-officer-name').value.trim();
+            const dept = document.getElementById('new-officer-dept').value;
+            const role = document.getElementById('new-officer-role').value;
+
+            DB_EMPLOYEES.push({
+                emp_id: id,
+                full_name: name,
+                department: dept === 'PLN' ? 'PLN Electricity Inspection' : 'PDAM Water Meter Operations',
+                utility_type: dept,
+                role: role,
+                readings_logged: 0
+            });
+
+            renderOfficerCards();
+            closeRegisterOfficerModal();
+            showToast(`New officer ${name} registered successfully!`, "success");
+        }
+
+        function openUnmeteredModal() {
+            document.getElementById('modal-add-unmetered').classList.remove('hidden');
+        }
+
+        function closeUnmeteredModal() {
+            document.getElementById('modal-add-unmetered').classList.add('hidden');
+        }
+
+        function handleUnmeteredSubmit(e) {
+            e.preventDefault();
+            const utility = document.getElementById('new-unmetered-utility').value;
+            const address = document.getElementById('new-unmetered-address').value.trim();
+            const type = document.getElementById('new-unmetered-type').value;
+            const loss = parseInt(document.getElementById('new-unmetered-loss').value) || 1200000;
+            const officer = document.getElementById('new-unmetered-officer').value;
+
+            const newId = `UNM-20260908-0${DB_UNMETERED_PREMISES.length + 1}`;
+            const units = utility === 'PLN' ? `${Math.round(loss / 1450)} kWh` : `${Math.round(loss / 4200)} m³`;
+
+            DB_UNMETERED_PREMISES.unshift({
+                unmetered_id: newId,
+                date_reported: new Date().toISOString().slice(0,16).replace('T', ' '),
+                utility_type: utility,
+                address: address,
+                hookup_type: type,
+                est_monthly_units: units,
+                est_loss_rp: loss,
+                officer_id: officer,
+                status: "PENDING_AUDIT"
+            });
+
+            renderUnmeteredTable();
+            closeUnmeteredModal();
+            showToast(`Unmetered premise ${newId} logged in tbl_unmetered_premises`, "success");
+        }
+
+        function scheduleMeterization(unmeteredId) {
+            const item = DB_UNMETERED_PREMISES.find(u => u.unmetered_id === unmeteredId);
+            if (item) {
+                item.status = "METER_SCHEDULED";
+                renderUnmeteredTable();
+                showToast(`Smart meter installation scheduled for ${unmeteredId}!`, "success");
+            }
+        }
+
+        function triggerDataSync() {
+            const icon = document.getElementById('sync-icon');
+            if (icon) icon.classList.add('fa-spin');
+            setTimeout(() => {
+                if (icon) icon.classList.remove('fa-spin');
+                refreshAllViews();
+                showToast("Database synchronized with edge scanners", "success");
+            }, 600);
+        }
+
+        function exportDatabaseCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,ReadingID,Timestamp,Utility,CustomerID,StandReading,UsageDelta,EstCost,OfficerID,Status\n";
+            DB_METER_READINGS.forEach(m => {
+                csvContent += `${m.reading_id},${m.timestamp},${m.utility_type},${m.customer_id},${m.stand_reading},${m.usage_delta},${m.est_cost},${m.officer_id},${m.validation_status}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `utility_meter_readings_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("CSV Database Export Downloaded", "success");
+        }
+
+        function exportExecutiveSummaryPDF() {
+            showToast("Executive Briefing PDF generated and saved to reports folder", "info");
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-cyan-600';
+            toast.className = `${bgClass} text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${msg}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
