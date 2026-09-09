@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glassmorphism Sandbox & Projects Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #080b14;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.25);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: #f3f4f6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 85% 25%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
+                radial-gradient(circle at 50% 75%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 80% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Animated Ambient Background Blobs */
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: 0;
+            pointer-events: none;
+            animation: orbFloat 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, -40px) scale(1.15); }
+            100% { transform: translate(-40px, 50px) scale(0.9); }
+        }
+
+        /* Modern Glassmorphism Tile Core Styles */
+        .glass-tile {
+            position: relative;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            box-shadow: 
+                0 10px 30px -10px rgba(0, 0, 0, 0.5),
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), 
+                        box-shadow 0.3s ease, 
+                        border-color 0.3s ease,
+                        opacity 0.3s ease;
+            overflow: hidden;
+        }
+
+        /* Mouse Light Reflection / Dynamic Spotlight Overlay */
+        .glass-tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 1.25rem;
+            background: radial-gradient(
+                600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(255, 255, 255, 0.12),
+                transparent 40%
+            );
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 2;
+        }
+
+        .glass-tile:hover::before {
+            opacity: 1;
+        }
+
+        /* Multi-layered Glowing Border Effect */
+        .glass-tile::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 1.25rem;
+            padding: 1px;
+            background: linear-gradient(
+                135deg, 
+                var(--accent-glow-start, rgba(59, 130, 246, 0.6)), 
+                transparent 40%, 
+                var(--accent-glow-end, rgba(168, 85, 247, 0.6))
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.3;
+            transition: opacity 0.3s ease, background 0.3s ease;
+        }
+
+        .glass-tile:hover::after {
+            opacity: 1;
+        }
+
+        /* Dynamic Multi-Layered Glow on Hover */
+        .glass-tile:hover {
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow: 
+                0 20px 40px -15px var(--glow-shadow, rgba(59, 130, 246, 0.35)),
+                0 0 30px -5px var(--secondary-glow, rgba(168, 85, 247, 0.25)),
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Individual Accent Theme Definitions */
+        .accent-blue {
+            --glow-shadow: rgba(59, 130, 246, 0.4);
+            --secondary-glow: rgba(14, 165, 233, 0.3);
+            --accent-glow-start: rgba(59, 130, 246, 0.8);
+            --accent-glow-end: rgba(147, 197, 253, 0.4);
+            --badge-bg: rgba(59, 130, 246, 0.15);
+            --badge-text: #93c5fd;
+            --badge-border: rgba(59, 130, 246, 0.3);
+        }
+
+        .accent-emerald {
+            --glow-shadow: rgba(16, 185, 129, 0.4);
+            --secondary-glow: rgba(52, 211, 153, 0.3);
+            --accent-glow-start: rgba(16, 185, 129, 0.8);
+            --accent-glow-end: rgba(110, 231, 183, 0.4);
+            --badge-bg: rgba(16, 185, 129, 0.15);
+            --badge-text: #6ee7b7;
+            --badge-border: rgba(16, 185, 129, 0.3);
+        }
+
+        .accent-purple {
+            --glow-shadow: rgba(168, 85, 247, 0.4);
+            --secondary-glow: rgba(192, 132, 252, 0.3);
+            --accent-glow-start: rgba(168, 85, 247, 0.8);
+            --accent-glow-end: rgba(216, 180, 254, 0.4);
+            --badge-bg: rgba(168, 85, 247, 0.15);
+            --badge-text: #d8b4fe;
+            --badge-border: rgba(168, 85, 247, 0.3);
+        }
+
+        .accent-amber {
+            --glow-shadow: rgba(245, 158, 11, 0.4);
+            --secondary-glow: rgba(251, 191, 36, 0.3);
+            --accent-glow-start: rgba(245, 158, 11, 0.8);
+            --accent-glow-end: rgba(253, 230, 138, 0.4);
+            --badge-bg: rgba(245, 158, 11, 0.15);
+            --badge-text: #fde047;
+            --badge-border: rgba(245, 158, 11, 0.3);
+        }
+
+        .accent-cyan {
+            --glow-shadow: rgba(6, 182, 212, 0.4);
+            --secondary-glow: rgba(34, 211, 238, 0.3);
+            --accent-glow-start: rgba(6, 182, 212, 0.8);
+            --accent-glow-end: rgba(165, 243, 252, 0.4);
+            --badge-bg: rgba(6, 182, 212, 0.15);
+            --badge-text: #67e8f9;
+            --badge-border: rgba(6, 182, 212, 0.3);
+        }
+
+        .accent-pink {
+            --glow-shadow: rgba(236, 72, 153, 0.4);
+            --secondary-glow: rgba(244, 114, 182, 0.3);
+            --accent-glow-start: rgba(236, 72, 153, 0.8);
+            --accent-glow-end: rgba(249, 168, 212, 0.4);
+            --badge-bg: rgba(236, 72, 153, 0.15);
+            --badge-text: #f9a8d4;
+            --badge-border: rgba(236, 72, 153, 0.3);
+        }
+
+        .accent-rose {
+            --glow-shadow: rgba(244, 63, 94, 0.4);
+            --secondary-glow: rgba(251, 113, 133, 0.3);
+            --accent-glow-start: rgba(244, 63, 94, 0.8);
+            --accent-glow-end: rgba(254, 205, 211, 0.4);
+            --badge-bg: rgba(244, 63, 94, 0.15);
+            --badge-text: #fecdd3;
+            --badge-border: rgba(244, 63, 94, 0.3);
+        }
+
+        .accent-orange {
+            --glow-shadow: rgba(249, 115, 22, 0.4);
+            --secondary-glow: rgba(251, 146, 60, 0.3);
+            --accent-glow-start: rgba(249, 115, 22, 0.8);
+            --accent-glow-end: rgba(253, 186, 116, 0.4);
+            --badge-bg: rgba(249, 115, 22, 0.15);
+            --badge-text: #fdba74;
+            --badge-border: rgba(249, 115, 22, 0.3);
+        }
+
+        /* List View Customizations */
+        .view-list .tile-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .view-list .glass-tile {
+            min-height: auto !important;
+        }
+
+        .view-list .tile-inner-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-direction: row;
+            padding: 1.25rem 1.5rem;
+            gap: 1.5rem;
+        }
+
+        .view-grid .tile-inner-layout {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding: 1.5rem;
+        }
+
+        /* List View Soft Blue & Gray Override Theme */
+        .view-list .glass-tile {
+            background: rgba(15, 23, 42, 0.55) !important;
+            border-color: rgba(148, 163, 184, 0.18) !important;
+            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .view-list .glass-tile::before {
+            background: radial-gradient(
+                600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(56, 189, 248, 0.08),
+                transparent 40%
+            ) !important;
+        }
+
+        .view-list .glass-tile::after {
+            background: linear-gradient(
+                135deg, 
+                rgba(56, 189, 248, 0.4), 
+                transparent 50%, 
+                rgba(148, 163, 184, 0.3)
+            ) !important;
+        }
+
+        .view-list .glass-tile:hover {
+            border-color: rgba(125, 211, 252, 0.4) !important;
+            box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
+            background: rgba(23, 37, 84, 0.45) !important;
+        }
+
+        .view-list .tile-badge {
+            background-color: rgba(56, 189, 248, 0.12) !important;
+            color: #93c5fd !important;
+            border-color: rgba(56, 189, 248, 0.25) !important;
+        }
+
+        /* Glass Input Fields & Controls */
+        .glass-control {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transition: all 0.25s ease;
+        }
+
+        .glass-control:focus {
+            outline: none;
+            border-color: rgba(99, 102, 241, 0.6);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080b14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tile-badge {
+            background-color: var(--badge-bg);
+            color: var(--badge-text);
+            border: 1px solid var(--badge-border);
+        }
+
+        /* Subtle 3D Layer Elevation inside Card */
+        .layer-depth-1 { transform: translateZ(15px); }
+        .layer-depth-2 { transform: translateZ(25px); }
+    </style>
+</head>
+<body class="min-h-screen relative flex flex-col justify-between p-4 sm:p-8 lg:p-12">
+
+    <!-- Background Ambient Glow Orbs -->
+    <div class="ambient-orb w-96 h-96 bg-blue-600/20 top-10 left-10"></div>
+    <div class="ambient-orb w-[30rem] h-[30rem] bg-purple-600/20 top-1/3 right-10" style="animation-delay: -5s;"></div>
+    <div class="ambient-orb w-80 h-80 bg-pink-600/20 bottom-20 left-1/4" style="animation-delay: -10s;"></div>
+
+    <!-- Maximized 3-Column Container (Expanded max-width to 1600px) -->
+    <div class="max-w-[1600px] mx-auto w-full z-10 relative">
+
+        <!-- HEADER SECTION -->
+        <header class="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-white/10">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono tracking-wider uppercase bg-blue-500/10 border border-blue-500/30 text-blue-400 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                    Interactive Glassmorphic Hub
+                </div>
+                <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white mb-3">
+                    Learning <span class="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Projects</span>
+                </h1>
+                <p class="text-base sm:text-lg font-light text-gray-400 max-w-2xl leading-relaxed">
+                    A curated showcase of web apps, experiments, and developer utilities engineered with responsive layout options and tactile 3D glassmorphic interactions.
+                </p>
+            </div>
+
+            <!-- SEARCH & VIEW TOGGLE CONTROLS -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                
+                <!-- Search Box -->
+                <div class="relative min-w-[240px]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search projects..." 
+                        class="glass-control w-full pl-10 pr-4 py-2.5 rounded-xl text-sm placeholder-gray-500"
+                    >
+                    <button id="clearSearch" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Grid / List View Toggle Switcher -->
+                <div class="flex items-center bg-black/40 p-1 rounded-xl border border-white/10 self-start sm:self-auto">
+                    <button 
+                        id="btnGridView" 
+                        title="Grid View"
+                        class="view-btn active px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all duration-200 bg-indigo-600/80 text-white shadow-lg shadow-indigo-500/30"
+                    >
+                        <i class="fa-solid fa-border-all"></i>
+                        <span class="hidden sm:inline">Grid</span>
+                    </button>
+                    <button 
+                        id="btnListView" 
+                        title="List View"
+                        class="view-btn px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5"
+                    >
+                        <i class="fa-solid fa-list-ul"></i>
+                        <span class="hidden sm:inline">List</span>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- CATEGORY TAG FILTERS -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar text-xs">
+            <span class="text-gray-500 font-medium mr-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-filter text-indigo-400"></i> Filter:
+            </span>
+            <button class="filter-chip active px-3.5 py-1.5 rounded-lg border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 font-medium transition-all" data-category="all">All Items</button>
+            <button class="filter-chip px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white transition-all" data-category="Web App">Web Apps</button>
+            <button class="filter-chip px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white transition-all" data-category="Tool">Tools</button>
+            <button class="filter-chip px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white transition-all" data-category="Experiment">Experiments</button>
+            <button class="filter-chip px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white transition-all" data-category="android">Android</button>
+            <button class="filter-chip px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white transition-all" data-category="API Test">API Tests</button>
+        </div>
+
+        <!-- MAIN TILES CONTAINER (Defaults to Grid Mode) -->
+        <main id="tilesContainer" class="view-grid">
+            <!-- 3 Columns grid layout for medium screens and up -->
+            <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-300 w-full">
+
+                <!-- PROJECT TILE 1 (Blue Accent) -->
+                <a href="jadwal_set_seragam_mingguan_v2.html" 
+                   class="glass-tile accent-blue group min-h-[220px] w-full" 
+                   data-title="Seragam Set FILKOM" 
+                   data-category="Web App"
+                   data-desc="A simple to-do app untuk melihat seragam">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Web App</span>
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-list-check text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-blue-300 transition-colors flex items-center gap-2">
+                                Seragam Set FILKOM
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                A simple to-do app untuk melihat seragam harian dan jadwal mingguan secara terorganisir.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- PROJECT TILE 2 -->
+                <a href="filkom_sporthub_jadwal_olahraga_badminton_tenis_meja.html" 
+                   class="glass-tile accent-emerald group min-h-[220px]" 
+                   data-title="Filkom Sport Hub" 
+                   data-category="Web App"
+                   data-desc="Project for Sport Hub and Tournament Management">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Web App</span>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-gamepad text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
+                                Filkom Sport Hub
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Project for Sport Hub, Court Reservations, and Tournament Schedule Management.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- PROJECT TILE 3 -->
+                <a href="aplikasi_keuangan_warga_griyashanta_rw_19.html" 
+                   class="glass-tile accent-purple group min-h-[220px]" 
+                   data-title="Manajemen Keuangan RW 19" 
+                   data-category="Tool"
+                   data-desc="project uji coba manajemen keuangan dan data warga rw 19 griyashanta.">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Tool</span>
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-calculator text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-purple-300 transition-colors flex items-center gap-2">
+                                Manajemen Keuangan RW 19
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Project uji coba manajemen keuangan dan rekapitulasi data warga RW 19 Griyashanta.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- PROJECT TILE 4 -->
+                <a href="aura_css_studio_modern_design_system_css_toolset.html" 
+                   class="glass-tile accent-orange group min-h-[220px]" 
+                   data-title="CSS Studio" 
+                   data-category="Experiment"
+                   data-desc="Viewing CSS design and keyframes.">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Experiment</span>
+                            <div class="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-flask text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-orange-300 transition-colors flex items-center gap-2">
+                                CSS Studio
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Viewing CSS design systems, dynamic keyframes, and aesthetic glass modern toolsets.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- PROJECT TILE 5 -->
+                <a href="m3-pln_pdam_utility_scanner_separated_metered_database_architecture.html" 
+                   class="glass-tile accent-cyan group min-h-[220px]" 
+                   data-title="PLN and PDAM OCR" 
+                   data-category="android"
+                   data-desc="Light & Fast Android Architecture, Kotlin Architecture">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Android</span>
+                            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-brands fa-android text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors flex items-center gap-2">
+                                PLN and PDAM OCR
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Light & Fast Android Utility Scanner with separated metered database architecture.
+                            </p>
+                        </div>
+                    </div>
+                </a> 
+
+                <!-- PROJECT TILE 6 -->
+                <a href="m3-management_utility_dashboard_db_reader.html" 
+                   class="glass-tile accent-pink group min-h-[220px]" 
+                   data-title="PLN and PDAM User Management" 
+                   data-category="Web App"
+                   data-desc="PLN Electricity & PDAM Water Database Reader & Management Portal">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Web App</span>
+                            <div class="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 group-hover:scale-110 group-hover:bg-pink-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-window-restore text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-pink-300 transition-colors flex items-center gap-2">
+                                PLN & PDAM User Management
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Electricity & Water Database Reader, Data Analytics & User Management Portal.
+                            </p>
+                        </div>
+                    </div>
+                </a> 
+                
+                <!-- PROJECT TILE 7 -->
+                <a href="item_book_tracker_with_google_sheets.html" 
+                   class="glass-tile accent-amber group min-h-[220px]" 
+                   data-title="Lend Keeper" 
+                   data-category="Web App"
+                   data-desc="Personal Tracker & Loan Log">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">Web App</span>
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-book-bookmark text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-amber-300 transition-colors flex items-center gap-2">
+                                Lend Keeper
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Personal Tracker & Loan Log synced seamlessly with Google Sheets API.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- PROJECT TILE 8 -->
+                <a href="weather.html" 
+                   class="glass-tile accent-rose group min-h-[220px]" 
+                   data-title="Weather Widget" 
+                   data-category="API Test"
+                   data-desc="Fetching live weather data with JavaScript.">
+                    <div class="tile-inner-layout">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="tile-badge text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md">API Test</span>
+                            <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-md">
+                                <i class="fa-solid fa-cloud-sun text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <h2 class="text-xl font-bold text-white group-hover:text-rose-300 transition-colors flex items-center gap-2">
+                                Weather Widget
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </h2>
+                            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                                Live geolocation and weather forecasting interface powered by async JavaScript APIs.
+                            </p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- ADD PROJECT INSTRUCTION TILE -->
+                <div class="glass-tile border-dashed border-white/20 bg-white/[0.02] min-h-[220px] p-6 flex flex-col justify-between text-gray-400 group hover:border-blue-400/50 transition-colors cursor-pointer" id="addProjectModalTrigger">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">Guide</span>
+                        <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 group-hover:rotate-90 transition-transform duration-300">
+                            <i class="fa-solid fa-plus text-lg"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-white mb-1 group-hover:text-blue-300 transition-colors">+ How to add a new project</h2>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Copy any <code class="text-blue-300 bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-500/20">.glass-tile</code> block inside <code class="text-blue-300 bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-500/20">index.html</code> and edit the target HTML file path.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- EMPTY SEARCH RESULTS NOTICE -->
+            <div id="noResults" class="hidden text-center py-16 glass-tile my-6">
+                <i class="fa-solid fa-folder-open text-4xl text-gray-500 mb-3 block"></i>
+                <h3 class="text-lg font-semibold text-white">No matching projects found</h3>
+                <p class="text-xs text-gray-400 mt-1">Try adjusting your search query or filter tags</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- FLOATING BACK TO TOP BUTTON -->
+    <button id="floatingBackToTop" 
+            title="Back to Top"
+            class="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-slate-900/80 backdrop-blur-md border border-sky-400/30 text-sky-400 hover:text-white hover:bg-sky-600 hover:border-sky-400 shadow-xl shadow-sky-500/10 flex items-center justify-center transition-all duration-300 opacity-0 pointer-events-none hover:scale-110">
+        <i class="fa-solid fa-arrow-up text-base"></i>
+    </button>
+
+    <!-- ADD PROJECT MODAL DIALOG -->
+    <div id="projectModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-tile max-w-lg w-full p-6 sm:p-8 bg-gray-900/90 border border-white/20 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button id="closeModal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+                    <i class="fa-solid fa-code text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">Add Project Guide</h3>
+                    <p class="text-xs text-gray-400">Instructions for adding new pages to your sandbox</p>
+                </div>
+            </div>
+            <div class="space-y-4 text-xs text-gray-300">
+                <p>To register a new HTML page in this grid, add the following code structure into <code class="text-indigo-300">index.html</code> inside <code class="text-indigo-300">#projectsGrid</code>:</p>
+                <pre class="bg-black/60 p-4 rounded-xl border border-white/10 font-mono text-[11px] text-indigo-300 overflow-x-auto"><code>&lt;a href="your_page.html" 
+   class="glass-tile accent-blue group min-h-[220px]" 
+   data-title="Your App Name" 
+   data-category="Web App"
+   data-desc="Short description"&gt;
+  &lt;div class="tile-inner-layout"&gt;
+    &lt;!-- Tile Header &amp; Content --&gt;
+  &lt;/div&gt;
+&lt;/a&gt;</code></pre>
+                <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px]">
+                    <strong>Available Accent Colors:</strong> <span class="text-white">accent-blue, accent-emerald, accent-purple, accent-amber, accent-cyan, accent-pink, accent-rose, accent-orange</span>
+                </div>
+            </div>
+            <div class="mt-6 text-right">
+                <button id="closeModalBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 transition-all">Got It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="max-w-[1600px] mx-auto w-full mt-16 pt-6 border-t border-white/10 text-xs text-gray-400 flex flex-col sm:flex-row justify-between items-center gap-4 z-10 relative">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Personal Glassmorphism Sandbox Hub</span>
+        </div>
+        <div class="flex items-center gap-6">
+            <button id="footerBackToTop" class="text-sky-400 hover:text-sky-300 flex items-center gap-1.5 transition-colors font-medium">
+                <span>Back to top</span>
+                <i class="fa-solid fa-chevron-up text-[10px]"></i>
+            </button>
+            <span class="text-gray-500 font-mono">Yusi Tyroni Mursityo &copy; 2026</span>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tiles = document.querySelectorAll('.glass-tile');
+            const projectsGrid = document.getElementById('projectsGrid');
+            const tilesContainer = document.getElementById('tilesContainer');
+            const btnGridView = document.getElementById('btnGridView');
+            const btnListView = document.getElementById('btnListView');
+            const searchInput = document.getElementById('searchInput');
+            const clearSearch = document.getElementById('clearSearch');
+            const filterChips = document.querySelectorAll('.filter-chip');
+            const noResults = document.getElementById('noResults');
+            const floatingBackToTop = document.getElementById('floatingBackToTop');
+            const footerBackToTop = document.getElementById('footerBackToTop');
+
+            let activeCategory = 'all';
+
+            // ==========================================
+            // BACK TO TOP SCROLL FUNCTIONALITY
+            // ==========================================
+            function scrollToTop() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+
+            if (footerBackToTop) footerBackToTop.addEventListener('click', scrollToTop);
+            if (floatingBackToTop) floatingBackToTop.addEventListener('click', scrollToTop);
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    floatingBackToTop.classList.remove('opacity-0', 'pointer-events-none');
+                    floatingBackToTop.classList.add('opacity-100', 'pointer-events-auto');
+                } else {
+                    floatingBackToTop.classList.add('opacity-0', 'pointer-events-none');
+                    floatingBackToTop.classList.remove('opacity-100', 'pointer-events-auto');
+                }
+            });
+
+            // ==========================================
+            // 1. 3D TILT EFFECT & MOUSE SPOTLIGHT GLOW
+            // ==========================================
+            tiles.forEach(tile => {
+                tile.addEventListener('mousemove', (e) => {
+                    const rect = tile.getBoundingClientRect();
+                    const x = e.clientX - rect.left; // x pos within the element
+                    const y = e.clientY - rect.top;  // y pos within the element
+
+                    // Calculate mouse position relative to card center (-1 to 1)
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    const rotateX = ((y - centerY) / centerY) * -12; // tilt max 12 deg
+                    const rotateY = ((x - centerX) / centerX) * 12;
+
+                    // Set spotlight position
+                    tile.style.setProperty('--mouse-x', `${x}px`);
+                    tile.style.setProperty('--mouse-y', `${y}px`);
+
+                    // Apply 3D perspective rotation
+                    tile.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px) scale3d(1.02, 1.02, 1.02)`;
+                });
+
+                tile.addEventListener('mouseleave', () => {
+                    // Reset 3D tilt smoothly
+                    tile.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale3d(1, 1, 1)';
+                });
+            });
+
+            // ==========================================
+            // 2. GRID vs LIST VIEW TOGGLE MECHANISM
+            // ==========================================
+            function setViewMode(mode) {
+                if (mode === 'list') {
+                    tilesContainer.classList.remove('view-grid');
+                    tilesContainer.classList.add('view-list');
+                    
+                    projectsGrid.classList.remove('grid-cols-1', 'md:grid-cols-3', 'gap-6');
+                    projectsGrid.classList.add('flex', 'flex-col', 'gap-4');
+
+                    // Button visual state
+                    btnListView.className = 'view-btn active px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all duration-200 bg-indigo-600/80 text-white shadow-lg shadow-indigo-500/30';
+                    btnGridView.className = 'view-btn px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5';
+                    
+                    localStorage.setItem('hub_view_mode', 'list');
+                } else {
+                    tilesContainer.classList.remove('view-list');
+                    tilesContainer.classList.add('view-grid');
+
+                    projectsGrid.classList.remove('flex', 'flex-col', 'gap-4');
+                    projectsGrid.classList.add('grid-cols-1', 'md:grid-cols-3', 'gap-6');
+
+                    // Button visual state
+                    btnGridView.className = 'view-btn active px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all duration-200 bg-indigo-600/80 text-white shadow-lg shadow-indigo-500/30';
+                    btnListView.className = 'view-btn px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5';
+
+                    localStorage.setItem('hub_view_mode', 'grid');
+                }
+            }
+
+            btnGridView.addEventListener('click', () => setViewMode('grid'));
+            btnListView.addEventListener('click', () => setViewMode('list'));
+
+            // Load saved preference
+            const savedMode = localStorage.getItem('hub_view_mode') || 'grid';
+            setViewMode(savedMode);
+
+            // ==========================================
+            // 3. REAL-TIME SEARCH & CATEGORY FILTERING
+            // ==========================================
+            function filterTiles() {
+                const query = searchInput.value.toLowerCase().trim();
+                let visibleCount = 0;
+
+                tiles.forEach(tile => {
+                    if (tile.id === 'addProjectModalTrigger') {
+                        // Always keep instruction tile unless query is active
+                        if (query !== '') {
+                            tile.style.display = 'none';
+                        } else {
+                            tile.style.display = 'flex';
+                        }
+                        return;
+                    }
+
+                    const title = (tile.dataset.title || '').toLowerCase();
+                    const category = (tile.dataset.category || '').toLowerCase();
+                    const desc = (tile.dataset.desc || '').toLowerCase();
+
+                    const matchesSearch = title.includes(query) || category.includes(query) || desc.includes(query);
+                    const matchesCategory = activeCategory === 'all' || category === activeCategory.toLowerCase();
+
+                    if (matchesSearch && matchesCategory) {
+                        tile.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        tile.style.display = 'none';
+                    }
+                });
+
+                if (visibleCount === 0 && query !== '') {
+                    noResults.classList.remove('hidden');
+                } else {
+                    noResults.classList.add('hidden');
+                }
+
+                clearSearch.classList.toggle('hidden', query === '');
+            }
+
+            searchInput.addEventListener('input', filterTiles);
+
+            clearSearch.addEventListener('click', () => {
+                searchInput.value = '';
+                filterTiles();
+            });
+
+            filterChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    filterChips.forEach(c => {
+                        c.className = 'filter-chip px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white transition-all';
+                    });
+                    chip.className = 'filter-chip active px-3.5 py-1.5 rounded-lg border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 font-medium transition-all';
+                    activeCategory = chip.dataset.category;
+                    filterTiles();
+                });
+            });
+
+            // ==========================================
+            // 4. ADD PROJECT MODAL DIALOG CONTROLS
+            // ==========================================
+            const modalTrigger = document.getElementById('addProjectModalTrigger');
+            const projectModal = document.getElementById('projectModal');
+            const closeModal = document.getElementById('closeModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+
+            function openModalHandler() {
+                projectModal.classList.remove('hidden');
+            }
+
+            function closeModalHandler() {
+                projectModal.classList.add('hidden');
+            }
+
+            if (modalTrigger) modalTrigger.addEventListener('click', openModalHandler);
+            if (closeModal) closeModal.addEventListener('click', closeModalHandler);
+            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModalHandler);
+
+            projectModal.addEventListener('click', (e) => {
+                if (e.target === projectModal) closeModalHandler();
+            });
+        });
+    </script>
+</body>
+</html>
