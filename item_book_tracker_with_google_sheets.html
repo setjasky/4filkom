@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LendKeeper - Personal Item & Book Tracker</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                        playfair: ['Playfair Display', 'serif'],
+                        fredoka: ['Fredoka', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        :root, [data-theme="professional"] {
+            --font-family: 'Inter', sans-serif;
+            --bg-body: #f8fafc;
+            --bg-header: #0f172a;
+            --header-text: #ffffff;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+        }
+
+        [data-theme="flowery"] {
+            --font-family: 'Playfair Display', Georgia, serif;
+            --bg-body: #fdf2f8;
+            --bg-header: #831843;
+            --header-text: #fce7f3;
+            --card-bg: #ffffff;
+            --card-border: #fbcfe8;
+            --accent-color: #db2777;
+            --accent-hover: #be185d;
+        }
+
+        [data-theme="kids"] {
+            --font-family: 'Fredoka', 'Comic Sans MS', cursive, sans-serif;
+            --bg-body: #f0f9ff;
+            --bg-header: #0284c7;
+            --header-text: #e0f2fe;
+            --card-bg: #ffffff;
+            --card-border: #bae6fd;
+            --accent-color: #059669;
+            --accent-hover: #047857;
+        }
+
+        body { 
+            font-family: var(--font-family); 
+            transition: background-color 0.3s ease, color 0.3s ease; 
+        }
+
+        /* Dynamic Theme Utility Classes */
+        .theme-header { background-color: var(--bg-header) !important; color: var(--header-text) !important; transition: all 0.3s ease; }
+        .theme-body { background-color: var(--bg-body) !important; font-family: var(--font-family) !important; transition: all 0.3s ease; }
+        .theme-btn-primary { background-color: var(--accent-color) !important; }
+        .theme-btn-primary:hover { background-color: var(--accent-hover) !important; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body id="appBody" class="h-full flex flex-col text-slate-800 antialiased selection:bg-indigo-500 selection:text-white theme-body">
+
+    <header id="appHeader" class="theme-header sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="appHeaderLogo" class="theme-btn-primary p-2 rounded-xl text-white shadow-lg flex items-center justify-center transition-all">
+                    <i data-lucide="book-marked" class="w-6 h-6" id="themeLogoIcon"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide" id="appLogoTitle">LendKeeper</h1>
+                    <p class="text-xs opacity-80" id="appSubTitle">Personal Tracker & Loan Log</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Theme Selector Dropdown -->
+                <div class="relative inline-flex items-center">
+                    <select id="themeSelect" onchange="changeTheme(this.value)" class="bg-black/20 hover:bg-black/30 text-white text-xs font-semibold py-1.5 px-3 pr-7 rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer appearance-none transition shadow-sm">
+                        <option value="professional" class="bg-slate-900 text-slate-100">💼 Professional</option>
+                        <option value="flowery" class="bg-pink-900 text-pink-100">🌸 Flowery</option>
+                        <option value="kids" class="bg-sky-900 text-sky-100">🎈 Kids / Playful</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-white/70 absolute right-2 pointer-events-none"></i>
+                </div>
+
+                <!-- Sync Status Button -->
+                <button onclick="openSyncModal()" id="syncStatusBadge" class="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-black/20 text-slate-200 hover:bg-black/30 transition border border-white/10">
+                    <span id="syncDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="syncText">Local Only</span>
+                </button>
+
+                <!-- Quick Sync Button -->
+                <button onclick="syncToGoogleSheets()" class="p-2 rounded-xl bg-black/20 hover:bg-black/30 text-white transition border border-white/10" title="Sync with Google Sheets">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col space-y-6">
+        
+        <!-- Navigation & Search Row -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+            <!-- Navigation Tabs -->
+            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
+                <button id="tab-catalog" onclick="switchTab('catalog')" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-700 bg-white shadow-sm">
+                    📚 My Collection (<span id="countCatalog">0</span>)
+                </button>
+                <button id="tab-loans" onclick="switchTab('loans')" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-800">
+                    🤝 Active Loans (<span id="countLoans">0</span>)
+                </button>
+                <button id="tab-history" onclick="switchTab('history')" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-800">
+                    📜 Loan History
+                </button>
+            </div>
+
+            <!-- Search & Actions -->
+            <div class="flex items-center space-x-2">
+                <div class="relative flex-1 md:w-64">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderApp()" placeholder="Search items or borrowers..." class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-50/50">
+                </div>
+                
+                <button onclick="openAddItemModal()" class="theme-btn-primary px-4 py-2 text-xs sm:text-sm font-semibold text-white rounded-xl shadow-md hover:shadow-lg transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Add Item</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="viewCatalog" class="block space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+                <!-- Category Pills Bar -->
+                <div id="categoryPillsContainer" class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar text-xs">
+                    <!-- Dynamic category pills rendered via JS -->
+                </div>
+
+                <!-- View Mode Switcher (Tiles vs List) -->
+                <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl shrink-0 self-end sm:self-auto">
+                    <button onclick="setViewMode('grid')" id="viewModeGridBtn" class="p-1.5 rounded-lg text-slate-700 bg-white shadow-sm transition" title="Grid / Tiles View">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="setViewMode('list')" id="viewModeListBtn" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition" title="List View">
+                        <i data-lucide="list" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Items Container (Grid or List) -->
+            <div id="catalogGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Catalog items rendered via JS -->
+            </div>
+        </div>
+
+        <div id="viewLoans" class="hidden space-y-4">
+            <div id="loansGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Active loans rendered via JS -->
+            </div>
+        </div>
+
+        <div id="viewHistory" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3 font-semibold">Item</th>
+                                <th class="p-3 font-semibold">Borrower</th>
+                                <th class="p-3 font-semibold">Borrowed Date</th>
+                                <th class="p-3 font-semibold">Returned Date</th>
+                                <th class="p-3 font-semibold">Status</th>
+                                <th class="p-3 font-semibold">Loan Photo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                            <!-- History rows rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add / Edit Item Modal -->
+    <div id="addItemModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 id="itemModalTitle" class="font-bold text-slate-800 text-base">Add New Item to Collection</h3>
+                <button onclick="closeItemModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="itemForm" onsubmit="saveItem(event)" class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm custom-scrollbar">
+                <input type="hidden" id="editItemId">
+                
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Item Title / Book Name *</label>
+                    <input type="text" id="itemTitle" required placeholder="e.g. Harry Potter, Sony Headphones" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Category</label>
+                        <select id="itemCategory" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none bg-white">
+                            <option value="Book">📖 Book</option>
+                            <option value="Notebook">📓 Notebook</option>
+                            <option value="Electronics">🎧 Electronics</option>
+                            <option value="Tool">🛠️ Tool</option>
+                            <option value="Other">📦 Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Default Home Location</label>
+                        <input type="text" id="itemLocation" placeholder="e.g. Bookshelf 2, Bedroom" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Description / Notes</label>
+                    <textarea id="itemDescription" rows="2" placeholder="Condition details, edition, serial number..." class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Item Photo Input Block -->
+                <div class="space-y-2">
+                    <label class="block font-medium text-slate-700">Item Photo</label>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openCameraModal('item')" class="px-3 py-2 bg-indigo-50 text-indigo-600 font-semibold rounded-xl border border-indigo-200 hover:bg-indigo-100 transition flex items-center space-x-1.5">
+                            <i data-lucide="camera" class="w-4 h-4"></i>
+                            <span>Take Photo</span>
+                        </button>
+                        <span class="text-slate-400 text-xs">or paste URL:</span>
+                        <input type="url" id="itemImageUrl" placeholder="https://..." onchange="updateItemImagePreview()" class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500/50 focus:outline-none">
+                    </div>
+
+                    <!-- Photo Preview Box -->
+                    <div id="itemPhotoPreviewContainer" class="hidden relative rounded-2xl overflow-hidden border border-slate-200 max-h-48 bg-slate-900 flex items-center justify-center">
+                        <img id="itemPhotoPreview" src="" class="max-h-48 object-contain">
+                        <button type="button" onclick="clearItemImage()" class="absolute top-2 right-2 bg-slate-900/80 text-white p-1.5 rounded-full hover:bg-slate-900">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+                    <button type="button" onclick="closeItemModal()" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+                    <button type="submit" class="theme-btn-primary px-5 py-2 rounded-xl text-white font-semibold shadow-md">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lend Out Item Modal -->
+    <div id="lendModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-base">Lend Item to Friend or Student</h3>
+                <button onclick="closeLendModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="lendForm" onsubmit="saveLoan(event)" class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm custom-scrollbar">
+                <input type="hidden" id="lendItemId">
+
+                <div class="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center space-x-3">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-600"></i>
+                    <div>
+                        <div class="text-xs text-indigo-600 font-semibold uppercase tracking-wider">Item Being Borrowed</div>
+                        <div id="lendItemTitle" class="font-bold text-slate-800"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Borrower Name *</label>
+                        <input type="text" id="borrowerName" required placeholder="e.g. John Doe / Student A" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Phone / WhatsApp</label>
+                        <input type="text" id="borrowerContact" placeholder="+123456789" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Borrow Date</label>
+                        <input type="date" id="borrowDate" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Expected Return Date</label>
+                        <input type="date" id="dueDate" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none bg-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Current Item Location / Classroom</label>
+                    <input type="text" id="loanLocation" placeholder="e.g. Handed in Lab B, Sent via mail" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:outline-none">
+                </div>
+
+                <!-- Handover Photo Snapshot -->
+                <div class="space-y-2">
+                    <label class="block font-medium text-slate-700">Snap Handover Photo (Optional)</label>
+                    <button type="button" onclick="openCameraModal('loan')" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl border border-slate-300 transition flex items-center justify-center space-x-2">
+                        <i data-lucide="camera" class="w-4 h-4 text-indigo-600"></i>
+                        <span>Snap Borrower or Item Condition Photo</span>
+                    </button>
+
+                    <div id="loanPhotoPreviewContainer" class="hidden relative rounded-2xl overflow-hidden border border-slate-200 max-h-48 bg-slate-900 flex items-center justify-center">
+                        <img id="loanPhotoPreview" src="" class="max-h-48 object-contain">
+                        <button type="button" onclick="clearLendPhoto()" class="absolute top-2 right-2 bg-slate-900/80 text-white p-1.5 rounded-full hover:bg-slate-900">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+                    <button type="button" onclick="closeLendModal()" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+                    <button type="submit" class="theme-btn-primary px-5 py-2 rounded-xl text-white font-semibold shadow-md">Confirm Lend</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Live Camera Capture Modal -->
+    <div id="cameraModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full border border-slate-800 overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between text-white">
+                <h4 class="font-bold text-sm flex items-center space-x-2">
+                    <i data-lucide="camera" class="w-4 h-4 text-indigo-400"></i>
+                    <span>Take Photo</span>
+                </h4>
+                <button onclick="closeCameraModal()" class="p-1 rounded-lg text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="relative bg-black flex items-center justify-center min-h-[260px] max-h-[360px]">
+                <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="cameraCanvas" class="hidden"></canvas>
+            </div>
+
+            <div class="p-4 bg-slate-900 flex items-center justify-between gap-3">
+                <button type="button" onclick="switchCameraFacing()" class="p-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl transition" title="Flip Camera">
+                    <i data-lucide="flip-horizontal" class="w-5 h-5"></i>
+                </button>
+                <button type="button" onclick="takeSnapshot()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center space-x-2">
+                    <i data-lucide="aperture" class="w-5 h-5"></i>
+                    <span>Capture Photo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Sheets Setup Modal -->
+    <div id="syncModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-base flex items-center space-x-2">
+                    <i data-lucide="sheet" class="w-5 h-5 text-emerald-600"></i>
+                    <span>Google Sheets Database Sync</span>
+                </h3>
+                <button onclick="closeSyncModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm custom-scrollbar">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Google Web App URL</label>
+                    <input type="url" id="sheetApiUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:outline-none">
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="saveSyncSettings()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-semibold transition">Save & Test Link</button>
+                    <button onclick="pullFromGoogleSheets()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-semibold transition">Pull Data from Sheet</button>
+                </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">How to Setup Free Google Sheets Database (2 mins):</h4>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-600 text-xs leading-relaxed">
+                        <li>Open a new <a href="https://sheets.new" target="_blank" class="text-indigo-600 underline font-semibold">Google Sheet</a>.</li>
+                        <li>Click <b>Extensions</b> &gt; <b>Apps Script</b>.</li>
+                        <li>Delete any existing code and paste the Google Apps Script code below.</li>
+                        <li>Click <b>Deploy</b> &gt; <b>New Deployment</b> &gt; Select type: <b>Web app</b>.</li>
+                        <li>Set <i>Who has access</i> to <b>"Anyone"</b> and click Deploy.</li>
+                        <li>Copy the generated Web App URL and paste it into the field above.</li>
+                    </ol>
+
+                    <div class="relative">
+                        <textarea id="appsScriptCode" readonly class="w-full h-36 font-mono text-[11px] p-3 bg-slate-900 text-emerald-400 rounded-xl border border-slate-800 leading-relaxed custom-scrollbar focus:outline-none"></textarea>
+                        <button onclick="copyAppsScriptCode()" class="absolute top-2 right-2 bg-slate-800 hover:bg-slate-700 text-white text-xs px-2.5 py-1 rounded-lg border border-slate-700">Copy Code</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp / SMS Reminder Modal -->
+    <div id="reminderModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden p-5 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-base">Send Borrower Reminder</h3>
+                <button onclick="closeReminderModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500">Preview and edit the gentle return reminder message below before sending via WhatsApp:</p>
+
+            <textarea id="reminderMessage" rows="5" class="w-full p-3 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"></textarea>
+
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button onclick="closeReminderModal()" class="px-4 py-2 rounded-xl text-slate-600 text-xs font-medium">Cancel</button>
+                <button onclick="sendWhatsAppReminder()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    <span>Open WhatsApp</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reusable Confirmation Dialog Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl p-5 space-y-4 text-center">
+            <div class="mx-auto w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h4 id="confirmModalTitle" class="font-bold text-slate-800 text-base">Confirm Action</h4>
+                <p id="confirmModalMessage" class="text-xs text-slate-500 mt-1">Are you sure you want to proceed?</p>
+            </div>
+            <div class="flex items-center space-x-2 pt-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50">Cancel</button>
+                <button id="confirmModalBtn" class="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Application State
+        let appState = {
+            items: [],
+            history: [],
+            googleSheetUrl: localStorage.getItem('lendkeeper_sheet_url') || '',
+            theme: localStorage.getItem('lendkeeper_theme') || 'professional',
+            activeTab: 'catalog',
+            selectedCategory: 'All',
+            viewMode: localStorage.getItem('lendkeeper_view_mode') || 'grid'
+        };
+
+        // Camera State
+        let cameraStream = null;
+        let activeCameraTarget = null; // 'item' or 'loan'
+        let cameraFacingMode = 'environment';
+        let pendingConfirmAction = null;
+        let activeReminderPhone = '';
+
+        // Google Apps Script template for backend sheet configuration
+        const GOOGLE_APPS_SCRIPT_CODE = `function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var itemsSheet = ss.getSheetByName("Items") || ss.insertSheet("Items");
+  var loansSheet = ss.getSheetByName("Loans") || ss.insertSheet("Loans");
+  
+  var itemRows = itemsSheet.getDataRange().getValues();
+  var loanRows = loansSheet.getDataRange().getValues();
+  
+  var items = [];
+  if (itemRows.length > 1) {
+    for (var i = 1; i < itemRows.length; i++) {
+      items.push({
+        id: itemRows[i][0],
+        title: itemRows[i][1],
+        category: itemRows[i][2],
+        defaultLocation: itemRows[i][3],
+        status: itemRows[i][4],
+        description: itemRows[i][5],
+        imageUrl: itemRows[i][6]
+      });
+    }
+  }
+  
+  var loans = [];
+  if (loanRows.length > 1) {
+    for (var j = 1; j < loanRows.length; j++) {
+      loans.push({
+        id: loanRows[j][0],
+        itemId: loanRows[j][1],
+        itemTitle: loanRows[j][2],
+        borrowerName: loanRows[j][3],
+        borrowerContact: loanRows[j][4],
+        borrowDate: loanRows[j][5],
+        dueDate: loanRows[j][6],
+        returnDate: loanRows[j][7],
+        currentLocation: loanRows[j][8],
+        status: loanRows[j][9],
+        loanPhoto: loanRows[j][10]
+      });
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({status: "success", items: items, loans: loans}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. Items Sheet
+    var itemsSheet = ss.getSheetByName("Items") || ss.insertSheet("Items");
+    itemsSheet.clear();
+    itemsSheet.appendRow(["ID", "Title", "Category", "Location", "Status", "Description", "Photo URL/Data", "Preview"]);
+    
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(function(item) {
+        var imgFormula = (item.imageUrl && item.imageUrl.indexOf('http') === 0) ? '=IMAGE("' + item.imageUrl + '")' : 'N/A';
+        itemsSheet.appendRow([item.id, item.title, item.category, item.defaultLocation, item.status, item.description, item.imageUrl, imgFormula]);
+      });
+    }
+    
+    // 2. Loans Sheet
+    var loansSheet = ss.getSheetByName("Loans") || ss.insertSheet("Loans");
+    loansSheet.clear();
+    loansSheet.appendRow(["Loan ID", "Item ID", "Item Title", "Borrower", "Contact", "Borrow Date", "Due Date", "Return Date", "Location", "Status", "Loan Photo URL/Data", "Photo Preview"]);
+    
+    if (data.history && data.history.length > 0) {
+      data.history.forEach(function(loan) {
+        var photoFormula = (loan.loanPhoto && loan.loanPhoto.indexOf('http') === 0) ? '=IMAGE("' + loan.loanPhoto + '")' : 'N/A';
+        loansSheet.appendRow([loan.id, loan.itemId, loan.itemTitle, loan.borrowerName, loan.borrowerContact, loan.borrowDate, loan.dueDate, loan.returnDate || "", loan.currentLocation, loan.status, loan.loanPhoto || "", photoFormula]);
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: "success", message: "Data synced successfully!"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+        // Initialize application on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLocalData();
+            applyTheme(appState.theme);
+            if (appState.items.length === 0) {
+                seedInitialData();
+            }
+            renderApp();
+            lucide.createIcons();
+
+            document.getElementById('appsScriptCode').value = GOOGLE_APPS_SCRIPT_CODE;
+
+            if (appState.googleSheetUrl) {
+                document.getElementById('sheetApiUrl').value = appState.googleSheetUrl;
+                updateSyncBadge('synced', 'Google Sheets Linked');
+            }
+        });
+
+        function loadLocalData() {
+            try {
+                const storedItems = localStorage.getItem('lendkeeper_items');
+                const storedHistory = localStorage.getItem('lendkeeper_history');
+                if (storedItems) appState.items = JSON.parse(storedItems);
+                if (storedHistory) appState.history = JSON.parse(storedHistory);
+            } catch (err) {
+                console.error("Failed to load local storage:", err);
+            }
+        }
+
+        function saveLocalData() {
+            localStorage.setItem('lendkeeper_items', JSON.stringify(appState.items));
+            localStorage.setItem('lendkeeper_history', JSON.stringify(appState.history));
+            renderApp();
+            
+            if (appState.googleSheetUrl) {
+                syncToGoogleSheets(true);
+            }
+        }
+
+        function seedInitialData() {
+            appState.items = [
+                {
+                    id: 'item-1',
+                    title: 'Clean Code Book',
+                    category: 'Book',
+                    defaultLocation: 'Main Study Bookshelf',
+                    status: 'available',
+                    description: 'A Handbook of Agile Software Craftsmanship by Robert C. Martin.',
+                    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80'
+                },
+                {
+                    id: 'item-2',
+                    title: 'Physics Lab Notebook',
+                    category: 'Notebook',
+                    defaultLocation: 'Office Desk Drawer 2',
+                    status: 'borrowed',
+                    description: 'Advanced mechanics class notes and lab diagrams.',
+                    imageUrl: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=400&q=80'
+                }
+            ];
+
+            const today = new Date().toISOString().split('T')[0];
+            const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+            appState.history = [
+                {
+                    id: 'loan-1',
+                    itemId: 'item-2',
+                    itemTitle: 'Physics Lab Notebook',
+                    borrowerName: 'Alex Smith',
+                    borrowerContact: '+1234567890',
+                    borrowDate: today,
+                    dueDate: nextWeek,
+                    returnDate: null,
+                    currentLocation: 'Classroom 3B Desk',
+                    status: 'active',
+                    loanPhoto: ''
+                }
+            ];
+
+            saveLocalData();
+        }
+
+        function changeTheme(themeName) {
+            appState.theme = themeName;
+            localStorage.setItem('lendkeeper_theme', themeName);
+            applyTheme(themeName);
+            showToast(`Theme changed to ${themeName.charAt(0).toUpperCase() + themeName.slice(1)}!`, 'info');
+        }
+
+        function applyTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
+            const selectEl = document.getElementById('themeSelect');
+            if (selectEl) selectEl.value = themeName;
+
+            const logoIcon = document.getElementById('themeLogoIcon');
+            const subTitle = document.getElementById('appSubTitle');
+
+            if (themeName === 'flowery') {
+                if (logoIcon) logoIcon.setAttribute('data-lucide', 'flower-2');
+                if (subTitle) subTitle.textContent = 'Garden & Personal Collection';
+            } else if (themeName === 'kids') {
+                if (logoIcon) logoIcon.setAttribute('data-lucide', 'smile');
+                if (subTitle) subTitle.textContent = 'Fun Book & Toy Tracker';
+            } else {
+                if (logoIcon) logoIcon.setAttribute('data-lucide', 'book-marked');
+                if (subTitle) subTitle.textContent = 'Personal Tracker & Loan Log';
+            }
+            lucide.createIcons();
+        }
+
+        function switchTab(tab) {
+            appState.activeTab = tab;
+            ['catalog', 'loans', 'history'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if (t === tab) {
+                    btn.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-800 bg-white shadow-sm";
+                    view.classList.remove('hidden');
+                } else {
+                    btn.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-800";
+                    view.classList.add('hidden');
+                }
+            });
+        }
+
+        function setCategoryFilter(category) {
+            appState.selectedCategory = category;
+            renderApp();
+        }
+
+        function setViewMode(mode) {
+            appState.viewMode = mode;
+            localStorage.setItem('lendkeeper_view_mode', mode);
+            renderApp();
+        }
+
+        function renderApp() {
+            const query = (document.getElementById('searchInput').value || '').toLowerCase();
+
+            // Active Loans map
+            const activeLoansMap = {};
+            appState.history.filter(h => h.status === 'active').forEach(l => {
+                activeLoansMap[l.itemId] = l;
+            });
+
+            // Filter items by category and search query
+            const filteredItems = appState.items.filter(item => {
+                const activeLoan = activeLoansMap[item.id];
+                const borrowerName = activeLoan ? activeLoan.borrowerName.toLowerCase() : '';
+                
+                const matchesCategory = appState.selectedCategory === 'All' || item.category === appState.selectedCategory;
+                const matchesSearch = item.title.toLowerCase().includes(query) ||
+                                      item.category.toLowerCase().includes(query) ||
+                                      borrowerName.includes(query);
+                                      
+                return matchesCategory && matchesSearch;
+            });
+
+            renderCategoryPills();
+            renderCatalog(filteredItems, activeLoansMap);
+            renderLoans(query);
+            renderHistory(query);
+
+            const activeLoansCount = appState.history.filter(h => h.status === 'active').length;
+            document.getElementById('countCatalog').textContent = appState.items.length;
+            document.getElementById('countLoans').textContent = activeLoansCount;
+
+            lucide.createIcons();
+        }
+
+        function renderCategoryPills() {
+            const container = document.getElementById('categoryPillsContainer');
+            if (!container) return;
+
+            // Gather standard and custom categories present in items
+            const defaultCats = ['Book', 'Notebook', 'Electronics', 'Tool', 'Other'];
+            const presentCats = Array.from(new Set(appState.items.map(i => i.category)));
+            const allCats = ['All', ...Array.from(new Set([...defaultCats, ...presentCats]))];
+
+            container.innerHTML = allCats.map(cat => {
+                const isSelected = appState.selectedCategory === cat;
+                const count = cat === 'All' 
+                    ? appState.items.length 
+                    : appState.items.filter(i => i.category === cat).length;
+
+                const activeClass = isSelected 
+                    ? 'theme-btn-primary text-white shadow-sm font-bold' 
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium';
+
+                return `
+                <button onclick="setCategoryFilter('${cat}')" class="px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 whitespace-nowrap transition ${activeClass}">
+                    <span>${cat}</span>
+                    <span class="px-1.5 py-0.2 text-[10px] rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}">${count}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function renderCatalog(items, activeLoansMap) {
+            const grid = document.getElementById('catalogGrid');
+            const isGrid = appState.viewMode === 'grid';
+
+            // Update View Switcher Buttons styling
+            const gridBtn = document.getElementById('viewModeGridBtn');
+            const listBtn = document.getElementById('viewModeListBtn');
+            if (gridBtn && listBtn) {
+                if (isGrid) {
+                    gridBtn.className = "p-1.5 rounded-lg text-slate-800 bg-white shadow-sm transition";
+                    listBtn.className = "p-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+                } else {
+                    gridBtn.className = "p-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+                    listBtn.className = "p-1.5 rounded-lg text-slate-800 bg-white shadow-sm transition";
+                }
+            }
+
+            // Set grid vs list container class
+            grid.className = isGrid 
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                : "flex flex-col space-y-3";
+
+            if (items.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 p-6">
+                    <i data-lucide="package-open" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                    <p class="text-sm font-medium text-slate-500">No collection items found in "${appState.selectedCategory}".</p>
+                </div>`;
+                return;
+            }
+
+            if (isGrid) {
+                // Grid / Tiles Mode
+                grid.innerHTML = items.map(item => {
+                    const isBorrowed = item.status === 'borrowed';
+                    const activeLoan = activeLoansMap[item.id];
+                    const imgSrc = item.imageUrl || 'https://placehold.co/400x300/e2e8f0/64748b?text=No+Photo';
+
+                    return `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
+                        <div class="relative h-44 bg-slate-100 overflow-hidden">
+                            <img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=Photo+Error'">
+                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-sm ${isBorrowed ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'}">
+                                ${isBorrowed ? 'Lent Out' : 'Available'}
+                            </span>
+                            <div class="absolute top-3 right-3 flex space-x-1">
+                                <button onclick="openAddItemModal('${item.id}')" class="p-1.5 bg-slate-900/60 hover:bg-slate-900 text-white rounded-lg transition" title="Edit Item">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="confirmDeleteItem('${item.id}')" class="p-1.5 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition" title="Delete Item">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 mb-0.5">${item.category}</div>
+                                <h4 class="font-bold text-slate-800 text-sm sm:text-base line-clamp-1">${item.title}</h4>
+                                <p class="text-xs text-slate-500 line-clamp-2 mt-1">${item.description || 'No description provided.'}</p>
+                            </div>
+
+                            ${isBorrowed && activeLoan ? `
+                                <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-xs space-y-1">
+                                    <div class="font-semibold text-amber-900 flex items-center space-x-1">
+                                        <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                                        <span>${activeLoan.borrowerName}</span>
+                                    </div>
+                                    <div class="text-amber-700 text-[11px]">Due: ${activeLoan.dueDate}</div>
+                                </div>
+                            ` : `
+                                <div class="text-[11px] text-slate-400 flex items-center space-x-1">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                                    <span>Location: ${item.defaultLocation || 'Unspecified'}</span>
+                                </div>
+                            `}
+
+                            <div class="pt-2 border-t border-slate-100">
+                                ${isBorrowed && activeLoan ? `
+                                    <button onclick="returnItem('${activeLoan.id}')" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-1">
+                                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Mark Returned</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="openLendModal('${item.id}')" class="w-full theme-btn-primary py-2 text-white font-semibold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1">
+                                        <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                                        <span>Lend Out Item</span>
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                // List Mode
+                grid.innerHTML = items.map(item => {
+                    const isBorrowed = item.status === 'borrowed';
+                    const activeLoan = activeLoansMap[item.id];
+                    const imgSrc = item.imageUrl || 'https://placehold.co/120x120/e2e8f0/64748b?text=Item';
+
+                    return `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:shadow-md transition">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <img src="${imgSrc}" class="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0" onerror="this.src='https://placehold.co/120x120/e2e8f0/64748b?text=Item'">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-100">${item.category}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isBorrowed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                                        ${isBorrowed ? 'Lent Out' : 'Available'}
+                                    </span>
+                                </div>
+                                <h4 class="font-bold text-slate-800 text-sm sm:text-base truncate mt-1">${item.title}</h4>
+                                <p class="text-xs text-slate-500 truncate mt-0.5">
+                                    ${isBorrowed && activeLoan 
+                                        ? `Borrowed by <strong class="text-slate-700">${activeLoan.borrowerName}</strong> (Due: ${activeLoan.dueDate})` 
+                                        : `Location: ${item.defaultLocation || 'Unspecified'} • ${item.description || 'No description'}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 justify-end">
+                            <button onclick="openAddItemModal('${item.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition" title="Edit Item">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="confirmDeleteItem('${item.id}')" class="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition" title="Delete Item">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+
+                            ${isBorrowed && activeLoan ? `
+                                <button onclick="returnItem('${activeLoan.id}')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition flex items-center space-x-1">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                                    <span>Return</span>
+                                </button>
+                            ` : `
+                                <button onclick="openLendModal('${item.id}')" class="theme-btn-primary px-3 py-2 text-white font-semibold text-xs rounded-xl shadow transition flex items-center space-x-1">
+                                    <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                                    <span>Lend</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        function renderLoans(query) {
+            const activeLoans = appState.history.filter(h => h.status === 'active' && 
+                (h.itemTitle.toLowerCase().includes(query) || h.borrowerName.toLowerCase().includes(query)));
+            
+            const grid = document.getElementById('loansGrid');
+            if (activeLoans.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 p-6">
+                    <i data-lucide="smile" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                    <p class="text-sm font-medium text-slate-500">No items currently lent out.</p>
+                </div>`;
+                return;
+            }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            grid.innerHTML = activeLoans.map(loan => {
+                const isOverdue = loan.dueDate < todayStr;
+                const photoSrc = loan.loanPhoto || 'https://placehold.co/400x300/f1f5f9/94a3b8?text=No+Loan+Photo';
+
+                return `
+                <div class="bg-white rounded-2xl border ${isOverdue ? 'border-red-300 shadow-red-100' : 'border-slate-200'} shadow-sm overflow-hidden p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700'}">
+                                ${isOverdue ? '⚠️ OVERDUE' : 'ON LOAN'}
+                            </span>
+                            <h4 class="font-bold text-slate-800 text-base mt-1">${loan.itemTitle}</h4>
+                        </div>
+                        <img src="${photoSrc}" class="w-12 h-12 rounded-xl object-cover border border-slate-200">
+                    </div>
+
+                    <div class="space-y-1 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Borrower:</span>
+                            <span class="font-semibold text-slate-800">${loan.borrowerName}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Contact:</span>
+                            <span>${loan.borrowerContact || 'N/A'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Borrowed:</span>
+                            <span>${loan.borrowDate}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Due Date:</span>
+                            <span class="${isOverdue ? 'font-bold text-red-600' : 'font-semibold'}">${loan.dueDate}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Handover Location:</span>
+                            <span>${loan.currentLocation || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 pt-1">
+                        <button onclick="openReminderModal('${loan.id}')" class="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs rounded-xl border border-emerald-200 transition flex items-center justify-center space-x-1">
+                            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                            <span>Send Reminder</span>
+                        </button>
+                        <button onclick="returnItem('${loan.id}')" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>Returned</span>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderHistory(query) {
+            const tableBody = document.getElementById('historyTableBody');
+            const filteredHistory = appState.history.filter(h => 
+                h.itemTitle.toLowerCase().includes(query) || h.borrowerName.toLowerCase().includes(query));
+
+            if (filteredHistory.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400 text-xs">No lending logs found.</td></tr>`;
+                return;
+            }
+
+            tableBody.innerHTML = filteredHistory.map(log => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="p-3 font-semibold text-slate-800">${log.itemTitle}</td>
+                    <td class="p-3">${log.borrowerName} <div class="text-[10px] text-slate-400">${log.borrowerContact || ''}</div></td>
+                    <td class="p-3 text-slate-500">${log.borrowDate}</td>
+                    <td class="p-3 text-slate-500">${log.returnDate || '---'}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${log.status === 'active' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                            ${log.status === 'active' ? 'Active' : 'Returned'}
+                        </span>
+                    </td>
+                    <td class="p-3">
+                        ${log.loanPhoto ? `<img src="${log.loanPhoto}" class="w-8 h-8 rounded-lg object-cover border border-slate-200">` : '<span class="text-slate-300">None</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddItemModal(itemId = null) {
+            const modal = document.getElementById('addItemModal');
+            const title = document.getElementById('itemModalTitle');
+            document.getElementById('itemForm').reset();
+            clearItemImage();
+
+            if (itemId) {
+                const item = appState.items.find(i => i.id === itemId);
+                if (item) {
+                    title.textContent = "Edit Item";
+                    document.getElementById('editItemId').value = item.id;
+                    document.getElementById('itemTitle').value = item.title;
+                    document.getElementById('itemCategory').value = item.category;
+                    document.getElementById('itemLocation').value = item.defaultLocation || '';
+                    document.getElementById('itemDescription').value = item.description || '';
+                    if (item.imageUrl) {
+                        document.getElementById('itemImageUrl').value = item.imageUrl;
+                        setItemImagePreview(item.imageUrl);
+                    }
+                }
+            } else {
+                title.textContent = "Add New Item to Collection";
+                document.getElementById('editItemId').value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeItemModal() {
+            document.getElementById('addItemModal').classList.add('hidden');
+        }
+
+        function saveItem(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editItemId').value;
+            const title = document.getElementById('itemTitle').value.trim();
+            const category = document.getElementById('itemCategory').value;
+            const defaultLocation = document.getElementById('itemLocation').value.trim();
+            const description = document.getElementById('itemDescription').value.trim();
+            const imageUrl = document.getElementById('itemPhotoPreview').src || document.getElementById('itemImageUrl').value.trim();
+
+            if (editId) {
+                const idx = appState.items.findIndex(i => i.id === editId);
+                if (idx !== -1) {
+                    appState.items[idx] = { ...appState.items[idx], title, category, defaultLocation, description, imageUrl };
+                    showToast('Item updated successfully!', 'success');
+                }
+            } else {
+                const newItem = {
+                    id: 'item-' + Date.now(),
+                    title,
+                    category,
+                    defaultLocation,
+                    status: 'available',
+                    description,
+                    imageUrl
+                };
+                appState.items.unshift(newItem);
+                showToast('New item added to collection!', 'success');
+            }
+
+            saveLocalData();
+            closeItemModal();
+        }
+
+        function confirmDeleteItem(itemId) {
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            showConfirmModal(
+                'Delete Item?',
+                `Are you sure you want to delete "${item.title}"? This cannot be undone.`,
+                () => {
+                    appState.items = appState.items.filter(i => i.id !== itemId);
+                    saveLocalData();
+                    showToast('Item deleted.', 'info');
+                }
+            );
+        }
+
+        function openLendModal(itemId) {
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            document.getElementById('lendForm').reset();
+            clearLendPhoto();
+
+            document.getElementById('lendItemId').value = item.id;
+            document.getElementById('lendItemTitle').textContent = item.title;
+            
+            const today = new Date();
+            const twoWeeksLater = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+            document.getElementById('borrowDate').value = today.toISOString().split('T')[0];
+            document.getElementById('dueDate').value = twoWeeksLater.toISOString().split('T')[0];
+
+            document.getElementById('lendModal').classList.remove('hidden');
+        }
+
+        function closeLendModal() {
+            document.getElementById('lendModal').classList.add('hidden');
+        }
+
+        function saveLoan(e) {
+            e.preventDefault();
+            const itemId = document.getElementById('lendItemId').value;
+            const borrowerName = document.getElementById('borrowerName').value.trim();
+            const borrowerContact = document.getElementById('borrowerContact').value.trim();
+            const borrowDate = document.getElementById('borrowDate').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const currentLocation = document.getElementById('loanLocation').value.trim();
+            const loanPhoto = document.getElementById('loanPhotoPreview').src || '';
+
+            const itemIdx = appState.items.findIndex(i => i.id === itemId);
+            if (itemIdx === -1) return;
+
+            appState.items[itemIdx].status = 'borrowed';
+
+            const newLoan = {
+                id: 'loan-' + Date.now(),
+                itemId: itemId,
+                itemTitle: appState.items[itemIdx].title,
+                borrowerName,
+                borrowerContact,
+                borrowDate,
+                dueDate,
+                returnDate: null,
+                currentLocation,
+                status: 'active',
+                loanPhoto
+            };
+
+            appState.history.unshift(newLoan);
+            saveLocalData();
+            closeLendModal();
+            showToast(`Item lent to ${borrowerName}!`, 'success');
+        }
+
+        function returnItem(loanId) {
+            const loanIdx = appState.history.findIndex(h => h.id === loanId);
+            if (loanIdx === -1) return;
+
+            const loan = appState.history[loanIdx];
+            loan.status = 'returned';
+            loan.returnDate = new Date().toISOString().split('T')[0];
+
+            const itemIdx = appState.items.findIndex(i => i.id === loan.itemId);
+            if (itemIdx !== -1) {
+                appState.items[itemIdx].status = 'available';
+            }
+
+            saveLocalData();
+            showToast(`"${loan.itemTitle}" marked as returned!`, 'success');
+        }
+
+        async function openCameraModal(target) {
+            activeCameraTarget = target;
+            const modal = document.getElementById('cameraModal');
+            modal.classList.remove('hidden');
+            await startCameraStream();
+        }
+
+        async function startCameraStream() {
+            stopCameraStream();
+            const video = document.getElementById('cameraVideo');
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: cameraFacingMode },
+                    audio: false
+                });
+                video.srcObject = cameraStream;
+            } catch (err) {
+                showToast('Could not access camera: ' + err.message, 'error');
+                closeCameraModal();
+            }
+        }
+
+        function stopCameraStream() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+        }
+
+        function closeCameraModal() {
+            stopCameraStream();
+            document.getElementById('cameraModal').classList.add('hidden');
+        }
+
+        function switchCameraFacing() {
+            cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+            startCameraStream();
+        }
+
+        function takeSnapshot() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+            if (activeCameraTarget === 'item') {
+                setItemImagePreview(dataUrl);
+            } else if (activeCameraTarget === 'loan') {
+                setLendPhotoPreview(dataUrl);
+            }
+
+            closeCameraModal();
+            showToast('Photo captured!', 'success');
+        }
+
+        function setItemImagePreview(src) {
+            const img = document.getElementById('itemPhotoPreview');
+            const container = document.getElementById('itemPhotoPreviewContainer');
+            img.src = src;
+            container.classList.remove('hidden');
+        }
+
+        function clearItemImage() {
+            document.getElementById('itemImageUrl').value = '';
+            document.getElementById('itemPhotoPreview').src = '';
+            document.getElementById('itemPhotoPreviewContainer').classList.add('hidden');
+        }
+
+        function setLendPhotoPreview(src) {
+            const img = document.getElementById('loanPhotoPreview');
+            const container = document.getElementById('loanPhotoPreviewContainer');
+            img.src = src;
+            container.classList.remove('hidden');
+        }
+
+        function clearLendPhoto() {
+            document.getElementById('loanPhotoPreview').src = '';
+            document.getElementById('loanPhotoPreviewContainer').classList.add('hidden');
+        }
+
+        function updateItemImagePreview() {
+            const url = document.getElementById('itemImageUrl').value.trim();
+            if (url) setItemImagePreview(url);
+            else clearItemImage();
+        }
+
+        function openSyncModal() {
+            document.getElementById('syncModal').classList.remove('hidden');
+        }
+
+        function closeSyncModal() {
+            document.getElementById('syncModal').classList.add('hidden');
+        }
+
+        function saveSyncSettings() {
+            const url = document.getElementById('sheetApiUrl').value.trim();
+            appState.googleSheetUrl = url;
+            localStorage.setItem('lendkeeper_sheet_url', url);
+
+            if (url) {
+                updateSyncBadge('synced', 'Google Sheets Linked');
+                showToast('Sheet URL saved! Testing sync...', 'info');
+                syncToGoogleSheets();
+            } else {
+                updateSyncBadge('local', 'Local Only');
+                showToast('Unlinked Google Sheets', 'info');
+            }
+            closeSyncModal();
+        }
+
+        async function syncToGoogleSheets(silent = false) {
+            if (!appState.googleSheetUrl) return;
+
+            updateSyncBadge('syncing', 'Syncing...');
+            try {
+                const response = await fetch(appState.googleSheetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        items: appState.items,
+                        history: appState.history
+                    })
+                });
+
+                const resData = await response.json();
+                if (resData.status === 'success') {
+                    updateSyncBadge('synced', 'Synced');
+                    if (!silent) showToast('Successfully synced to Google Sheets!', 'success');
+                } else {
+                    throw new Error(resData.message || 'Sync failed');
+                }
+            } catch (err) {
+                updateSyncBadge('error', 'Sync Error');
+                if (!silent) showToast('Google Sheets Sync failed: ' + err.message, 'error');
+            }
+        }
+
+        async function pullFromGoogleSheets() {
+            if (!appState.googleSheetUrl) {
+                showToast('Please set a Google Sheet Web App URL first.', 'error');
+                return;
+            }
+
+            updateSyncBadge('syncing', 'Pulling...');
+            try {
+                const response = await fetch(appState.googleSheetUrl);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    if (data.items && data.items.length > 0) appState.items = data.items;
+                    if (data.loans && data.loans.length > 0) appState.history = data.loans;
+                    saveLocalData();
+                    updateSyncBadge('synced', 'Data Pulled');
+                    showToast('Data pulled from Google Sheets successfully!', 'success');
+                    closeSyncModal();
+                } else {
+                    throw new Error(data.message || 'Pull failed');
+                }
+            } catch (err) {
+                updateSyncBadge('error', 'Pull Error');
+                showToast('Failed to pull from Google Sheets: ' + err.message, 'error');
+            }
+        }
+
+        function updateSyncBadge(type, label) {
+            const badge = document.getElementById('syncStatusBadge');
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncText');
+
+            text.textContent = label;
+            dot.className = "w-2 h-2 rounded-full ";
+
+            if (type === 'synced') {
+                dot.className += "bg-emerald-400";
+            } else if (type === 'syncing') {
+                dot.className += "bg-amber-400 animate-ping";
+            } else if (type === 'error') {
+                dot.className += "bg-red-400";
+            } else {
+                dot.className += "bg-slate-400";
+            }
+        }
+
+        function openReminderModal(loanId) {
+            const loan = appState.history.find(h => h.id === loanId);
+            if (!loan) return;
+
+            activeReminderPhone = loan.borrowerContact || '';
+            const message = `Hi ${loan.borrowerName}, gentle reminder regarding "${loan.itemTitle}" borrowed on ${loan.borrowDate}. Expected return date was ${loan.dueDate}. Thanks!`;
+
+            document.getElementById('reminderMessage').value = message;
+            document.getElementById('reminderModal').classList.remove('hidden');
+        }
+
+        function closeReminderModal() {
+            document.getElementById('reminderModal').classList.add('hidden');
+        }
+
+        function sendWhatsAppReminder() {
+            const msg = encodeURIComponent(document.getElementById('reminderMessage').value);
+            const cleanPhone = activeReminderPhone.replace(/[^0-9]/g, '');
+            const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
+            window.open(url, '_blank');
+            closeReminderModal();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800';
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl text-white text-xs sm:text-sm font-semibold shadow-xl flex items-center space-x-2 transition transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            pendingConfirmAction = onConfirm;
+
+            const btn = document.getElementById('confirmModalBtn');
+            btn.onclick = () => {
+                if (pendingConfirmAction) pendingConfirmAction();
+                closeConfirmModal();
+            };
+
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            pendingConfirmAction = null;
+        }
+
+        function copyAppsScriptCode() {
+            const codeEl = document.getElementById('appsScriptCode');
+            codeEl.select();
+            document.execCommand('copy');
+            showToast('Apps Script code copied to clipboard!', 'success');
+        }
+    </script>
+</body>
+</html>
