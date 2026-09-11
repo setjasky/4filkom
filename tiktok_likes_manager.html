@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TikTok Vault">
+    <link rel="apple-touch-icon" id="appleTouchIcon" href="">
+    <link rel="manifest" id="pwaManifest">
+    <title>TikTok Liked Videos & Google Sheets Sync</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ttPink: '#FE2C55',
+                        ttCyan: '#25F4EE',
+                        ttDark: '#121212',
+                        ttCard: '#1E1E24',
+                        ttBorder: '#2A2A35'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #2A2A35; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3A3A4A; }
+        .glass-panel {
+            background: rgba(30, 30, 36, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Hide scrollbars on horizontal scroll filters */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-ttDark text-gray-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-30 glass-panel border-b border-ttBorder px-3 sm:px-6 py-2.5 sm:py-3 pt-safe">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-ttPink to-ttCyan p-0.5 shadow-lg shadow-ttPink/20 flex items-center justify-center shrink-0">
+                    <div class="w-full h-full bg-ttDark rounded-[10px] flex items-center justify-center">
+                        <i data-lucide="video" class="w-4 h-4 sm:w-5 sm:h-5 text-ttPink"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight flex items-center gap-1.5">
+                        TikTok Vault <span class="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-full bg-ttPink/20 text-ttPink border border-ttPink/30">Sync</span>
+                    </h1>
+                    <p class="text-[11px] text-gray-400 hidden xs:block">Save & export your favorite videos</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center gap-2">
+                <button id="pwaInstallBtn" onclick="installPwa()" class="hidden items-center gap-1.5 px-3 py-2 text-xs font-medium bg-ttPink/20 text-ttPink hover:bg-ttPink/30 border border-ttPink/40 rounded-xl active:scale-95 transition min-h-[40px]">
+                    <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Install App</span>
+                    <span class="sm:hidden">Install</span>
+                </button>
+                <button onclick="openSyncModal()" class="flex items-center justify-center p-2.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl active:scale-95 transition min-h-[40px] min-w-[40px]" title="Google Sheets Sync" aria-label="Google Sheets Sync">
+                    <i data-lucide="sheet" class="w-4 h-4"></i>
+                </button>
+                <button onclick="openAndroidGuideModal()" class="flex items-center justify-center p-2.5 text-xs font-medium bg-cyan-500/20 text-ttCyan hover:bg-cyan-500/30 border border-cyan-500/30 rounded-xl active:scale-95 transition min-h-[40px] min-w-[40px]" title="How to Install on Android" aria-label="Android Install Guide">
+                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                </button>
+                <button onclick="focusSearch()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800 text-gray-200 hover:bg-slate-700 border border-ttBorder rounded-xl active:scale-95 transition min-h-[40px]" title="Quick Search">
+                    <i data-lucide="search" class="w-4 h-4 text-ttCyan"></i>
+                    <span class="hidden md:inline">Search</span>
+                </button>
+                <button onclick="openAddModal()" class="hidden sm:flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium bg-gradient-to-r from-ttPink to-rose-600 active:scale-95 text-white rounded-xl shadow-md shadow-ttPink/20 transition min-h-[40px]">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Add Video</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 sm:pb-6">
+
+        <!-- Stats Overview Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+            <div class="glass-panel p-3 sm:p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] sm:text-xs text-gray-400 font-medium">Total Saved</p>
+                    <h3 id="statTotal" class="text-xl sm:text-2xl font-bold text-white mt-0.5">0</h3>
+                </div>
+                <div class="p-2 sm:p-2.5 bg-ttPink/10 text-ttPink rounded-lg">
+                    <i data-lucide="bookmark" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </div>
+            </div>
+            <div class="glass-panel p-3 sm:p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] sm:text-xs text-gray-400 font-medium">Creators</p>
+                    <h3 id="statCreators" class="text-xl sm:text-2xl font-bold text-amber-400 mt-0.5">0</h3>
+                </div>
+                <div class="p-2 sm:p-2.5 bg-amber-400/10 text-amber-400 rounded-lg">
+                    <i data-lucide="users" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </div>
+            </div>
+            <div class="glass-panel p-3 sm:p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] sm:text-xs text-gray-400 font-medium">Categories</p>
+                    <h3 id="statCategories" class="text-xl sm:text-2xl font-bold text-ttCyan mt-0.5">0</h3>
+                </div>
+                <div class="p-2 sm:p-2.5 bg-ttCyan/10 text-ttCyan rounded-lg">
+                    <i data-lucide="folder-open" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </div>
+            </div>
+            <div class="glass-panel p-3 sm:p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] sm:text-xs text-gray-400 font-medium">GSheets Status</p>
+                    <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-slate-800 text-gray-300 border border-slate-700 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Ready
+                    </span>
+                </div>
+                <div class="p-2 sm:p-2.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline & Install Banner -->
+        <div id="pwaBanner" class="hidden glass-panel p-3.5 rounded-xl border border-ttPink/30 bg-gradient-to-r from-ttPink/10 via-slate-900 to-slate-900 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <div class="p-2 bg-ttPink/20 text-ttPink rounded-lg shrink-0">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h4 class="text-xs sm:text-sm font-semibold text-white">Install TikTok Vault App</h4>
+                    <p class="text-[11px] text-gray-400">Add to your home screen for fast offline access and an native app experience.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button onclick="installPwa()" class="px-3 py-1.5 text-xs font-medium bg-ttPink text-white rounded-lg active:scale-95 transition">Install</button>
+                <button onclick="dismissPwaBanner()" class="p-1 text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+
+        <!-- Offline Banner Notice -->
+        <div id="offlineNotice" class="hidden glass-panel p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center gap-2.5 text-amber-300 text-xs">
+            <i data-lucide="wifi-off" class="w-4 h-4 text-amber-400 shrink-0"></i>
+            <span>You are currently offline. Your saved TikTok videos remain cached and accessible offline.</span>
+        </div>
+
+        <!-- Filter and Search Bar -->
+        <div class="glass-panel p-3 sm:p-4 rounded-xl space-y-3 md:space-y-0 md:flex md:items-center md:justify-between md:gap-4">
+            <!-- Search input -->
+            <div class="relative flex-1">
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="searchInput" oninput="renderVideos()" placeholder="Search title, creator, notes or tags..." 
+                    class="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm bg-slate-900/60 border border-ttBorder rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-ttPink transition">
+            </div>
+
+            <!-- Filter selectors (Horizontal scrollable on mobile) -->
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+                <!-- Category Filter -->
+                <select id="categoryFilter" onchange="renderVideos()" class="px-2.5 py-2 text-xs bg-slate-900/80 border border-ttBorder rounded-xl text-gray-200 focus:outline-none focus:border-ttPink shrink-0 min-h-[38px]">
+                    <option value="ALL">All Categories</option>
+                </select>
+
+                <!-- Sort Order -->
+                <select id="sortOrder" onchange="renderVideos()" class="px-2.5 py-2 text-xs bg-slate-900/80 border border-ttBorder rounded-xl text-gray-200 focus:outline-none focus:border-ttPink shrink-0 min-h-[38px]">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="title">Title A-Z</option>
+                </select>
+
+                <!-- View Switcher Toggle -->
+                <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-ttBorder shrink-0">
+                    <button id="viewGridBtn" onclick="setViewMode('grid')" class="p-1.5 rounded-lg text-ttPink bg-ttCard shadow active:scale-95" title="Grid View">
+                        <i data-lucide="grid" class="w-4 h-4"></i>
+                    </button>
+                    <button id="viewTableBtn" onclick="setViewMode('table')" class="p-1.5 rounded-lg text-gray-400 hover:text-white active:scale-95" title="Table View">
+                        <i data-lucide="list" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div id="videoContainer">
+            <!-- Dynamic Grid or Table loaded via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden glass-panel rounded-2xl p-8 sm:p-12 text-center max-w-md mx-auto my-6">
+            <div class="w-14 h-14 bg-slate-800 text-ttPink rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="film" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-base font-semibold text-white">No videos found</h3>
+            <p class="text-xs text-gray-400 mt-1 mb-5">Try adjusting your filters or add a new TikTok video to your vault.</p>
+            <button onclick="openAddModal()" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold bg-ttPink hover:bg-rose-600 text-white rounded-xl active:scale-95 transition">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Add First Video
+            </button>
+        </div>
+    </main>
+
+    <!-- Floating Action Controls (FAB & Back To Top) -->
+    <div class="fixed bottom-5 right-5 z-40 flex flex-col gap-2.5 items-center">
+        <!-- Back to Top Button -->
+        <button id="backToTopBtn" onclick="scrollToTop()" aria-label="Back to Top" class="w-11 h-11 rounded-full bg-slate-800/90 text-gray-200 border border-ttBorder shadow-lg backdrop-blur-md flex items-center justify-center active:scale-90 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 hover:text-ttPink">
+            <i data-lucide="arrow-up" class="w-5 h-5"></i>
+        </button>
+        
+        <!-- Mobile Add FAB -->
+        <button onclick="openAddModal()" aria-label="Add TikTok Video" class="sm:hidden w-14 h-14 rounded-full bg-gradient-to-tr from-ttPink to-rose-600 text-white shadow-xl shadow-ttPink/40 flex items-center justify-center active:scale-90 transition">
+            <i data-lucide="plus" class="w-7 h-7"></i>
+        </button>
+    </div>
+
+    <!-- Add / Edit Video Modal -->
+    <div id="videoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="glass-panel bg-ttDark border border-ttBorder rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden shadow-2xl transition-all">
+            <!-- Mobile Sheet Drag Handle -->
+            <div class="w-10 h-1 bg-gray-600/50 rounded-full mx-auto mt-2 sm:hidden"></div>
+
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 border-b border-ttBorder flex items-center justify-between">
+                <h3 id="modalTitle" class="font-bold text-base sm:text-lg text-white flex items-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5 text-ttPink"></i> Add TikTok Video
+                </h3>
+                <button onclick="closeModal('videoModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form id="videoForm" onsubmit="handleFormSubmit(event)" class="p-5 space-y-3.5 overflow-y-auto flex-1">
+                <input type="hidden" id="editVideoId">
+
+                <!-- TikTok URL -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">TikTok Link *</label>
+                    <div class="relative">
+                        <input type="url" id="formUrl" required oninput="autoParseTikTokUrl(this.value)"
+                            placeholder="https://www.tiktok.com/@creator/video/123456789..."
+                            class="w-full px-3.5 py-2.5 bg-slate-900 border border-ttBorder rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ttPink">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ttCyan font-medium hidden" id="urlParsedBadge">
+                            Parsed ✓
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Video Title -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Title / Short Description *</label>
+                    <input type="text" id="formTitle" required placeholder="e.g. Easy 15-Min Creamy Pasta Recipe"
+                        class="w-full px-3.5 py-2.5 bg-slate-900 border border-ttBorder rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ttPink">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Creator -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Creator Handle</label>
+                        <input type="text" id="formCreator" placeholder="@chef_mario"
+                            class="w-full px-3.5 py-2.5 bg-slate-900 border border-ttBorder rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ttPink">
+                    </div>
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Category</label>
+                        <input type="text" id="formCategory" list="categorySuggestions" placeholder="Recipe, Tech..."
+                            class="w-full px-3.5 py-2.5 bg-slate-900 border border-ttBorder rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ttPink">
+                        <datalist id="categorySuggestions">
+                            <option value="Recipes & Food">
+                            <option value="Tech & Coding">
+                            <option value="Lifehacks & Productivity">
+                            <option value="Fitness & Health">
+                            <option value="Comedy & Entertainment">
+                            <option value="Fashion & Beauty">
+                            <option value="Design & Art">
+                        </datalist>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Key Takeaways / Notes</label>
+                    <textarea id="formNotes" rows="3" placeholder="Ingredients list, timestamps, key steps or ideas to try..."
+                        class="w-full px-3.5 py-2.5 bg-slate-900 border border-ttBorder rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ttPink resize-none"></textarea>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="pt-2 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeModal('videoModal')" class="px-4 py-2.5 text-xs font-semibold text-gray-400 hover:text-white transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 text-xs font-semibold bg-ttPink hover:bg-rose-600 text-white rounded-xl shadow-lg shadow-ttPink/20 active:scale-95 transition">
+                        Save Video
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Player Embed Modal -->
+    <div id="playerModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="glass-panel bg-ttDark border border-ttBorder rounded-t-2xl sm:rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative max-h-[95vh] flex flex-col">
+            <div class="w-10 h-1 bg-gray-600/50 rounded-full mx-auto mt-2 sm:hidden"></div>
+            <div class="px-4 py-3 border-b border-ttBorder flex items-center justify-between">
+                <h4 id="playerModalTitle" class="font-semibold text-xs sm:text-sm text-white truncate pr-4">Video Preview</h4>
+                <button onclick="closePlayerModal()" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div id="playerContainer" class="p-3 sm:p-4 flex flex-col items-center justify-center min-h-[400px] sm:min-h-[480px]">
+                <!-- TikTok embed iframe will be inserted here -->
+            </div>
+
+            <div class="p-3 sm:p-4 border-t border-ttBorder bg-slate-900/50 flex items-center justify-between">
+                <a id="playerDirectLink" href="#" target="_blank" rel="noopener noreferrer" class="text-xs text-ttCyan hover:underline flex items-center gap-1 min-h-[36px]">
+                    Open on TikTok <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </a>
+                <button onclick="closePlayerModal()" class="px-3.5 py-1.5 text-xs font-medium bg-slate-800 text-gray-300 hover:bg-slate-700 rounded-lg active:scale-95">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Sheets Sync & Export Modal -->
+    <div id="syncModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="glass-panel bg-ttDark border border-ttBorder rounded-t-2xl sm:rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="w-10 h-1 bg-gray-600/50 rounded-full mx-auto mt-2 sm:hidden"></div>
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 border-b border-ttBorder flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base text-white">Google Sheets Export & Sync</h3>
+                        <p class="text-[11px] text-gray-400">Export or sync your saved videos to Google Sheets</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('syncModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
+                
+                <!-- Method 1: Instant CSV Export -->
+                <div class="bg-slate-900/80 border border-ttBorder p-3.5 sm:p-4 rounded-xl space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div>
+                            <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-emerald-500/20 text-emerald-400 rounded">Option 1</span>
+                            <h4 class="font-semibold text-xs sm:text-sm text-white mt-1">Download CSV for Google Sheets</h4>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Download `.csv` file to import into Google Sheets.</p>
+                        </div>
+                        <button onclick="exportToCSV()" class="w-full sm:w-auto px-3.5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition min-h-[40px]">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i> Download CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Method 2: Copy TSV for Direct Paste -->
+                <div class="bg-slate-900/80 border border-ttBorder p-3.5 sm:p-4 rounded-xl space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div>
+                            <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-blue-500/20 text-blue-400 rounded">Option 2</span>
+                            <h4 class="font-semibold text-xs sm:text-sm text-white mt-1">Copy Data for Paste (Ctrl+V)</h4>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Copies formatted text for instant paste into cell A1.</p>
+                        </div>
+                        <button onclick="copyForGSheets()" class="w-full sm:w-auto px-3.5 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition min-h-[40px]">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Data
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Method 3: Direct Webhook Sync -->
+                <div class="bg-slate-900/80 border border-ttBorder p-3.5 sm:p-4 rounded-xl space-y-3">
+                    <div>
+                        <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-purple-500/20 text-purple-400 rounded">Option 3</span>
+                        <h4 class="font-semibold text-xs sm:text-sm text-white mt-1">Live Webhook Sync</h4>
+                        <p class="text-[11px] text-gray-400 mt-0.5">Automate syncing using a free Google Apps Script Web App.</p>
+                    </div>
+
+                    <!-- Webhook URL Input -->
+                    <div class="space-y-2 pt-1">
+                        <label class="block text-[11px] font-medium text-gray-300">Your Apps Script Web App URL</label>
+                        <div class="flex gap-2">
+                            <input type="url" id="webhookUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+                                class="flex-1 px-3 py-2 text-xs bg-slate-950 border border-ttBorder rounded-xl text-white focus:outline-none focus:border-purple-500">
+                            <button onclick="saveWebhookUrl()" class="px-3.5 py-2 text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white rounded-xl active:scale-95">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex items-center gap-2">
+                        <button onclick="syncAllToWebhook()" class="w-full py-2.5 px-3 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white rounded-xl flex items-center justify-center gap-2 active:scale-95 transition min-h-[40px]">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Push Saved Videos to Webhook
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-4 border-t border-ttBorder bg-slate-900/50 flex justify-between items-center">
+                <button onclick="exportBackupJSON()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1">
+                    <i data-lucide="database" class="w-3.5 h-3.5"></i> Backup JSON
+                </button>
+                <button onclick="closeModal('syncModal')" class="px-4 py-2 text-xs font-medium bg-slate-800 text-gray-300 hover:bg-slate-700 rounded-xl">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Android Install Guide Modal -->
+    <div id="androidGuideModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="glass-panel bg-ttDark border border-ttBorder rounded-t-2xl sm:rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col">
+            <div class="w-10 h-1 bg-gray-600/50 rounded-full mx-auto mt-2 sm:hidden"></div>
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 border-b border-ttBorder flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-ttCyan/20 text-ttCyan rounded-lg">
+                        <i data-lucide="smartphone" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base text-white">How to Install on Android</h3>
+                        <p class="text-[11px] text-gray-400">Add TikTok Vault to your home screen in 3 easy steps</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('androidGuideModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Steps Content -->
+            <div class="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                
+                <!-- Quick One-Tap Install Option -->
+                <div class="p-3.5 bg-gradient-to-r from-ttPink/20 to-purple-600/20 border border-ttPink/40 rounded-xl flex items-center justify-between gap-3">
+                    <div>
+                        <h4 class="font-semibold text-white text-xs">Method 1: Direct Install Button</h4>
+                        <p class="text-[11px] text-gray-300 mt-0.5">If visible, tap the install button directly.</p>
+                    </div>
+                    <button onclick="installPwa(); closeModal('androidGuideModal');" class="px-3.5 py-2 text-xs font-semibold bg-ttPink hover:bg-rose-600 text-white rounded-xl shrink-0 active:scale-95 transition">
+                        Install Now
+                    </button>
+                </div>
+
+                <!-- Step-by-Step Chrome Instructions -->
+                <div class="bg-slate-900/80 border border-ttBorder rounded-xl p-4 space-y-3">
+                    <div class="flex items-center gap-2 text-ttCyan font-semibold text-sm">
+                        <i data-lucide="globe" class="w-4 h-4"></i>
+                        <span>Method 2: Google Chrome / Brave / Edge</span>
+                    </div>
+
+                    <ol class="space-y-2.5 pl-2 text-gray-300">
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 text-ttCyan flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">1</span>
+                            <div>
+                                <span class="font-medium text-white">Open Browser Menu</span>
+                                <p class="text-[11px] text-gray-400">Tap the three vertical dots <strong class="text-white font-mono">⋮</strong> in the top-right corner of Chrome.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 text-ttCyan flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">2</span>
+                            <div>
+                                <span class="font-medium text-white">Select "Add to Home screen"</span>
+                                <p class="text-[11px] text-gray-400">Tap on <strong class="text-white">"Add to Home screen"</strong> or <strong class="text-white">"Install app"</strong> from the menu options.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 text-ttCyan flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">3</span>
+                            <div>
+                                <span class="font-medium text-white">Confirm Installation</span>
+                                <p class="text-[11px] text-gray-400">Tap <strong class="text-white">"Add"</strong> or <strong class="text-white">"Install"</strong> in the popup prompt.</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+
+                <!-- Samsung Internet Instructions -->
+                <div class="bg-slate-900/80 border border-ttBorder rounded-xl p-4 space-y-3">
+                    <div class="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                        <i data-lucide="smartphone" class="w-4 h-4"></i>
+                        <span>Method 3: Samsung Internet</span>
+                    </div>
+
+                    <ol class="space-y-2.5 pl-2 text-gray-300">
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">1</span>
+                            <div>
+                                <span class="font-medium text-white">Open Menu</span>
+                                <p class="text-[11px] text-gray-400">Tap the menu icon <strong class="text-white font-mono">≡</strong> in the bottom-right corner.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">2</span>
+                            <div>
+                                <span class="font-medium text-white">Add Page To</span>
+                                <p class="text-[11px] text-gray-400">Tap <strong class="text-white">"Add page to"</strong> and select <strong class="text-white">"Home screen"</strong>.</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+
+                <!-- PWA Benefits -->
+                <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-start gap-2.5 text-emerald-300 text-[11px]">
+                    <i data-lucide="check-circle" class="w-4 h-4 shrink-0 mt-0.5 text-emerald-400"></i>
+                    <span>Once installed, TikTok Vault launches full-screen without address bars, saves offline content, and runs seamlessly like a native Android app!</span>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-ttBorder bg-slate-900/50 flex justify-end">
+                <button onclick="closeModal('androidGuideModal')" class="px-5 py-2 text-xs font-semibold bg-ttCyan text-slate-950 hover:bg-cyan-300 rounded-xl active:scale-95 transition">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-20 sm:bottom-6 right-4 left-4 sm:left-auto z-50 transform translate-y-10 opacity-0 pointer-events-none transition-all duration-300 glass-panel border border-ttPink/40 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3">
+        <i id="toastIcon" data-lucide="check-circle" class="w-5 h-5 text-ttPink shrink-0"></i>
+        <p id="toastMsg" class="text-xs font-medium text-white">Action completed successfully!</p>
+    </div>
+
+    <script>
+        // State Management
+        const STORAGE_KEY = 'tiktok_vault_videos_v1';
+        const WEBHOOK_KEY = 'tiktok_vault_webhook_url';
+        let videos = [];
+        let viewMode = 'grid'; // 'grid' or 'table'
+
+        // Default Sample Data to populate on first visit
+        const SAMPLE_VIDEOS = [
+            {
+                id: '1',
+                title: 'Ultimate Creamy Garlic Butter Pasta in 10 Mins',
+                creator: '@gordon_ramsay_fan',
+                category: 'Recipes & Food',
+                url: 'https://www.tiktok.com/@scout2015/video/6718335390845095170',
+                videoId: '6718335390845095170',
+                notes: 'Use heavily salted water. Add pasta water to emulsify sauce. Finish with fresh parmesan.',
+                dateAdded: '2026-09-01'
+            },
+            {
+                id: '2',
+                title: 'Top 5 VS Code Extensions for Frontend Developers 2026',
+                creator: '@tech_with_tim',
+                category: 'Tech & Coding',
+                url: 'https://www.tiktok.com/@scout2015/video/6718335390845095170',
+                videoId: '6718335390845095170',
+                notes: '1. Console Ninja\n2. GitLens\n3. Prettier\n4. Tailwind CSS IntelliSense',
+                dateAdded: '2026-09-05'
+            },
+            {
+                id: '3',
+                title: 'Morning 10-Minute Desk Stretch Routine for Back Pain',
+                creator: '@physio_guy',
+                category: 'Fitness & Health',
+                url: 'https://www.tiktok.com/@scout2015/video/6718335390845095170',
+                videoId: '6718335390845095170',
+                notes: 'Do Thoracic extensions and Hip flexor stretches every 2 hours while sitting.',
+                dateAdded: '2026-09-10'
+            }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadVideos();
+            loadWebhookSetting();
+            renderCategoryOptions();
+            renderVideos();
+            lucide.createIcons();
+
+            // Scroll listener for Back to Top button
+            window.addEventListener('scroll', handleScroll);
+
+            initPWA();
+        });
+
+        function handleScroll() {
+            const btn = document.getElementById('backToTopBtn');
+            if (btn) {
+                if (window.scrollY > 300) {
+                    btn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+                    btn.classList.add('opacity-100', 'translate-y-0');
+                } else {
+                    btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+                    btn.classList.remove('opacity-100', 'translate-y-0');
+                }
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function focusSearch() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 300);
+            }
+        }
+
+        // Load data from LocalStorage
+        function loadVideos() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    videos = JSON.parse(stored);
+                } catch (e) {
+                    videos = [...SAMPLE_VIDEOS];
+                }
+            } else {
+                videos = [...SAMPLE_VIDEOS];
+                saveVideos();
+            }
+        }
+
+        function saveVideos() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
+            updateStats();
+        }
+
+        function loadWebhookSetting() {
+            const url = localStorage.getItem(WEBHOOK_KEY);
+            if (url) {
+                document.getElementById('webhookUrlInput').value = url;
+                updateSyncBadge(true);
+            }
+        }
+
+        function saveWebhookUrl() {
+            const url = document.getElementById('webhookUrlInput').value.trim();
+            if (url) {
+                localStorage.setItem(WEBHOOK_KEY, url);
+                updateSyncBadge(true);
+                showToast('Webhook URL saved!', 'check-circle');
+            } else {
+                localStorage.removeItem(WEBHOOK_KEY);
+                updateSyncBadge(false);
+                showToast('Webhook URL cleared', 'info');
+            }
+        }
+
+        function updateSyncBadge(isConnected) {
+            const badge = document.getElementById('syncStatusBadge');
+            if (isConnected) {
+                badge.className = 'inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/60';
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Webhook Active`;
+            } else {
+                badge.className = 'inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full bg-slate-800 text-gray-300 border border-slate-700';
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Ready`;
+            }
+        }
+
+        function parseTikTokUrl(url) {
+            let videoId = '';
+            let creator = '';
+
+            const matchDesktop = url.match(/tiktok\.com\/@([^/]+)\/video\/(\d+)/i);
+            if (matchDesktop) {
+                creator = '@' + matchDesktop[1];
+                videoId = matchDesktop[2];
+            } else {
+                const matchId = url.match(/\/video\/(\d+)/i) || url.match(/(\d{18,19})/);
+                if (matchId) videoId = matchId[1];
+
+                const matchUser = url.match(/@([a-zA-Z0-9_.-]+)/);
+                if (matchUser) creator = '@' + matchUser[1];
+            }
+
+            return { videoId, creator };
+        }
+
+        function autoParseTikTokUrl(url) {
+            const parsed = parseTikTokUrl(url);
+            const badge = document.getElementById('urlParsedBadge');
+            
+            if (parsed.creator && !document.getElementById('formCreator').value) {
+                document.getElementById('formCreator').value = parsed.creator;
+            }
+
+            if (parsed.videoId) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').innerText = videos.length;
+            
+            const creators = new Set(videos.map(v => v.creator).filter(Boolean));
+            document.getElementById('statCreators').innerText = creators.size;
+
+            const categories = new Set(videos.map(v => v.category).filter(Boolean));
+            document.getElementById('statCategories').innerText = categories.size;
+        }
+
+        function renderCategoryOptions() {
+            const select = document.getElementById('categoryFilter');
+            const currentVal = select.value;
+            const categories = Array.from(new Set(videos.map(v => v.category).filter(Boolean))).sort();
+            
+            select.innerHTML = '<option value="ALL">All Categories</option>';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        function filterAndSortVideos() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const catFilter = document.getElementById('categoryFilter').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+
+            return videos.filter(item => {
+                const matchesSearch = !search || 
+                    item.title.toLowerCase().includes(search) || 
+                    item.creator.toLowerCase().includes(search) || 
+                    item.notes.toLowerCase().includes(search) ||
+                    item.category.toLowerCase().includes(search);
+
+                const matchesCat = catFilter === 'ALL' || item.category === catFilter;
+
+                return matchesSearch && matchesCat;
+            }).sort((a, b) => {
+                if (sortOrder === 'newest') return new Date(b.dateAdded) - new Date(a.dateAdded);
+                if (sortOrder === 'oldest') return new Date(a.dateAdded) - new Date(b.dateAdded);
+                if (sortOrder === 'title') return a.title.localeCompare(b.title);
+                return 0;
+            });
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            const gridBtn = document.getElementById('viewGridBtn');
+            const tableBtn = document.getElementById('viewTableBtn');
+
+            if (mode === 'grid') {
+                gridBtn.className = 'p-1.5 rounded-md text-ttPink bg-ttCard shadow';
+                tableBtn.className = 'p-1.5 rounded-md text-gray-400 hover:text-white';
+            } else {
+                tableBtn.className = 'p-1.5 rounded-md text-ttCyan bg-ttCard shadow';
+                gridBtn.className = 'p-1.5 rounded-md text-gray-400 hover:text-white';
+            }
+            renderVideos();
+        }
+
+        function renderVideos() {
+            const container = document.getElementById('videoContainer');
+            const emptyState = document.getElementById('emptyState');
+            const filtered = filterAndSortVideos();
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            if (viewMode === 'grid') {
+                renderGridView(container, filtered);
+            } else {
+                renderTableView(container, filtered);
+            }
+
+            lucide.createIcons();
+        }
+
+        function renderGridView(container, items) {
+            let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">`;
+
+            items.forEach(v => {
+                html += `
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-ttBorder hover:border-slate-600 transition group flex flex-col">
+                        <!-- Card Header Banner -->
+                        <div class="p-4 bg-gradient-to-r from-slate-900 to-slate-800 border-b border-ttBorder/60 flex items-center justify-between">
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-800 text-ttCyan border border-ttCyan/20">
+                                ${escapeHtml(v.category || 'General')}
+                            </span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-5 flex-1 space-y-3">
+                            <h4 class="font-bold text-white text-base leading-snug group-hover:text-ttPink transition line-clamp-2">
+                                ${escapeHtml(v.title)}
+                            </h4>
+
+                            <div class="flex items-center gap-2 text-xs text-gray-400">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-gray-400"></i>
+                                <span class="font-medium text-gray-300">${escapeHtml(v.creator || 'Unknown Creator')}</span>
+                            </div>
+
+                            ${v.notes ? `
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-xs text-gray-300 line-clamp-3">
+                                    <span class="text-gray-400 font-semibold block mb-0.5">Notes:</span>
+                                    ${escapeHtml(v.notes)}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="px-5 py-3 border-t border-ttBorder/60 bg-slate-900/40 flex items-center justify-between text-xs text-gray-400">
+                            <span class="text-[11px]">${v.dateAdded || 'Recently'}</span>
+                            
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="playVideo('${v.id}')" class="p-2 bg-ttPink/10 text-ttPink hover:bg-ttPink hover:text-white rounded-lg transition" title="Preview Video">
+                                    <i data-lucide="play" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openEditModal('${v.id}')" class="p-2 hover:bg-slate-800 text-gray-300 rounded-lg transition" title="Edit">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteVideo('${v.id}')" class="p-2 hover:bg-rose-500/20 text-rose-400 rounded-lg transition" title="Delete">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function renderTableView(container, items) {
+            let html = `
+                <div class="glass-panel rounded-2xl overflow-hidden border border-ttBorder">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/80 border-b border-ttBorder text-gray-400 font-semibold uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3.5">Title</th>
+                                    <th class="p-3.5">Creator</th>
+                                    <th class="p-3.5">Category</th>
+                                    <th class="p-3.5">Notes</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-ttBorder">
+            `;
+
+            items.forEach(v => {
+                html += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-3.5 font-medium text-white max-w-xs truncate">
+                            <a href="${escapeHtml(v.url)}" target="_blank" class="hover:text-ttCyan flex items-center gap-1.5">
+                                <i data-lucide="video" class="w-3.5 h-3.5 text-ttPink shrink-0"></i>
+                                <span class="truncate">${escapeHtml(v.title)}</span>
+                            </a>
+                        </td>
+                        <td class="p-3.5 text-gray-300 font-mono">${escapeHtml(v.creator || '-')}</td>
+                        <td class="p-3.5">
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-ttCyan border border-ttCyan/20">
+                                ${escapeHtml(v.category || 'General')}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-gray-400 max-w-xs truncate">${escapeHtml(v.notes || '-')}</td>
+                        <td class="p-3.5 text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <button onclick="playVideo('${v.id}')" class="p-1.5 bg-ttPink/10 text-ttPink hover:bg-ttPink hover:text-white rounded transition" title="Preview">
+                                    <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="openEditModal('${v.id}')" class="p-1.5 hover:bg-slate-800 text-gray-300 rounded transition" title="Edit">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="deleteVideo('${v.id}')" class="p-1.5 hover:bg-rose-500/20 text-rose-400 rounded transition" title="Delete">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        function openAddModal() {
+            document.getElementById('editVideoId').value = '';
+            document.getElementById('videoForm').reset();
+            document.getElementById('modalTitle').innerHTML = `<i data-lucide="plus" class="w-5 h-5 text-ttPink"></i> Add TikTok Video`;
+            document.getElementById('urlParsedBadge').classList.add('hidden');
+            document.getElementById('videoModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function openEditModal(id) {
+            const item = videos.find(v => v.id === id);
+            if (!item) return;
+
+            document.getElementById('editVideoId').value = item.id;
+            document.getElementById('formUrl').value = item.url;
+            document.getElementById('formTitle').value = item.title;
+            document.getElementById('formCreator').value = item.creator || '';
+            document.getElementById('formCategory').value = item.category || '';
+            document.getElementById('formNotes').value = item.notes || '';
+
+            document.getElementById('modalTitle').innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-ttCyan"></i> Edit Video Details`;
+            document.getElementById('videoModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editVideoId').value;
+            const url = document.getElementById('formUrl').value.trim();
+            const parsed = parseTikTokUrl(url);
+
+            const videoData = {
+                id: editId || Date.now().toString(),
+                url: url,
+                videoId: parsed.videoId || '',
+                title: document.getElementById('formTitle').value.trim(),
+                creator: document.getElementById('formCreator').value.trim() || parsed.creator || '@unknown',
+                category: document.getElementById('formCategory').value.trim() || 'General',
+                notes: document.getElementById('formNotes').value.trim(),
+                dateAdded: editId ? (videos.find(v => v.id === editId)?.dateAdded || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]
+            };
+
+            if (editId) {
+                const index = videos.findIndex(v => v.id === editId);
+                if (index !== -1) videos[index] = videoData;
+                showToast('Video updated successfully!', 'check-circle');
+            } else {
+                videos.unshift(videoData);
+                showToast('New video added to vault!', 'plus-circle');
+                triggerSingleWebhookPush(videoData);
+            }
+
+            saveVideos();
+            renderCategoryOptions();
+            renderVideos();
+            closeModal('videoModal');
+        }
+
+        function deleteVideo(id) {
+            videos = videos.filter(v => v.id !== id);
+            saveVideos();
+            renderCategoryOptions();
+            renderVideos();
+            showToast('Video removed from vault', 'trash-2');
+        }
+
+        function playVideo(id) {
+            const item = videos.find(v => v.id === id);
+            if (!item) return;
+
+            document.getElementById('playerModalTitle').innerText = item.title;
+            document.getElementById('playerDirectLink').href = item.url;
+
+            const playerContainer = document.getElementById('playerContainer');
+            
+            if (item.videoId) {
+                playerContainer.innerHTML = `
+                    <iframe src="https://www.tiktok.com/embed/v2/${item.videoId}" 
+                        class="w-full h-[520px] rounded-xl border border-ttBorder" 
+                        allowfullscreen 
+                        scrolling="no"
+                        allow="encrypted-media;"></iframe>
+                `;
+            } else {
+                playerContainer.innerHTML = `
+                    <div class="text-center p-8 space-y-4">
+                        <i data-lucide="external-link" class="w-12 h-12 text-ttPink mx-auto"></i>
+                        <p class="text-sm text-gray-300">Direct embed preview is not available for this custom short link format.</p>
+                        <a href="${escapeHtml(item.url)}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-ttPink text-white rounded-lg text-sm font-semibold">
+                            Open directly on TikTok
+                        </a>
+                    </div>
+                `;
+            }
+
+            document.getElementById('playerModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePlayerModal() {
+            document.getElementById('playerModal').classList.add('hidden');
+            document.getElementById('playerContainer').innerHTML = '';
+        }
+
+        function openSyncModal() {
+            document.getElementById('syncModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function openAndroidGuideModal() {
+            document.getElementById('androidGuideModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function exportToCSV() {
+            if (videos.length === 0) {
+                showToast('No videos to export', 'alert-circle');
+                return;
+            }
+
+            const headers = ['Title', 'Creator', 'Category', 'TikTok URL', 'Notes', 'Date Added'];
+            const rows = videos.map(v => [
+                `"${(v.title || '').replace(/"/g, '""')}"`,
+                `"${(v.creator || '').replace(/"/g, '""')}"`,
+                `"${(v.category || '').replace(/"/g, '""')}"`,
+                `"${(v.url || '').replace(/"/g, '""')}"`,
+                `"${(v.notes || '').replace(/"/g, '""')}"`,
+                v.dateAdded || ''
+            ]);
+
+            const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `TikTok_Liked_Videos_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('CSV downloaded for Google Sheets!', 'download');
+        }
+
+        function copyForGSheets() {
+            if (videos.length === 0) {
+                showToast('No videos to copy', 'alert-circle');
+                return;
+            }
+
+            const headers = ['Title', 'Creator', 'Category', 'TikTok URL', 'Notes', 'Date Added'].join('\t');
+            const rows = videos.map(v => [
+                v.title || '',
+                v.creator || '',
+                v.category || '',
+                v.url || '',
+                (v.notes || '').replace(/\n/g, ' '),
+                v.dateAdded || ''
+            ].join('\t')).join('\n');
+
+            const fullText = headers + '\n' + rows;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = fullText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast('Copied! Open Google Sheet & press Ctrl+V', 'copy');
+        }
+
+        function copyAppsScript() {
+            const code = `function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Title", "Creator", "Category", "TikTok URL", "Notes", "Date Added"]);
+  }
+  if (Array.isArray(data)) {
+    data.forEach(function(r) {
+      sheet.appendRow([r.title, r.creator, r.category, r.url, r.notes, r.dateAdded]);
+    });
+  } else {
+    sheet.appendRow([data.title, data.creator, data.category, data.url, data.notes, data.dateAdded]);
+  }
+  return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+}`;
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast('Google Apps Script code copied!', 'code');
+        }
+
+        function syncAllToWebhook() {
+            const url = localStorage.getItem(WEBHOOK_KEY);
+            if (!url) {
+                showToast('Please save a Webhook URL first!', 'alert-circle');
+                return;
+            }
+
+            showToast('Syncing to Google Sheets...', 'refresh-cw');
+
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(videos)
+            }).then(() => {
+                showToast('Pushed all videos to Google Sheet!', 'check-circle');
+            }).catch(err => {
+                showToast('Sync failed. Check Webhook URL.', 'alert-circle');
+            });
+        }
+
+        function triggerSingleWebhookPush(videoData) {
+            const url = localStorage.getItem(WEBHOOK_KEY);
+            if (!url) return;
+
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(videoData)
+            }).catch(() => {});
+        }
+
+        function exportBackupJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(videos, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `tiktok_vault_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function showToast(message, iconName = 'check-circle') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // PWA Implementation Logic
+        let deferredPrompt = null;
+
+        function initPWA() {
+            generateManifestAndIcons();
+            registerServiceWorker();
+            setupPwaInstallPrompt();
+            setupNetworkListeners();
+        }
+
+        function generateManifestAndIcons() {
+            // Generate dynamic SVG app icon
+            const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="%23121212"/><rect width="512" height="512" rx="100" fill="url(%23grad)" opacity="0.15"/><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FE2C55"/><stop offset="100%" stop-color="%2325F4EE"/></linearGradient></defs><circle cx="256" cy="256" r="180" fill="%231E1E24" stroke="%232A2A35" stroke-width="12"/><path d="M180 160h150v50h-90v180h-60V210h-0v-50z" fill="%23FE2C55"/><path d="M250 160h100v40h-60v190h-60V210" fill="%2325F4EE" opacity="0.8"/><circle cx="256" cy="256" r="140" fill="none" stroke="%23FE2C55" stroke-width="12" stroke-dasharray="20 10"/></svg>`;
+            const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+            // Set iOS Apple touch icon
+            const appleIconEl = document.getElementById('appleTouchIcon');
+            if (appleIconEl) appleIconEl.href = iconUrl;
+
+            // Generate Manifest JSON Data URL
+            const manifestObj = {
+                name: "TikTok Vault & GSheet Sync",
+                short_name: "TikTok Vault",
+                description: "Save, manage and sync your favorite TikTok videos directly to Google Sheets.",
+                start_url: "./",
+                display: "standalone",
+                background_color: "#121212",
+                theme_color: "#121212",
+                orientation: "portrait-primary",
+                icons: [
+                    {
+                        src: iconUrl,
+                        sizes: "192x192 512x512",
+                        type: "image/svg+xml",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            const manifestLink = document.getElementById('pwaManifest');
+            if (manifestLink) manifestLink.href = manifestUrl;
+        }
+
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                const swScript = `
+                    const CACHE_NAME = 'tiktok-vault-pwa-v1';
+                    const ASSETS = [
+                        './',
+                        'https://cdn.tailwindcss.com',
+                        'https://unpkg.com/lucide@latest',
+                        'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+                    ];
+
+                    self.addEventListener('install', (e) => {
+                        e.waitUntil(
+                            caches.open(CACHE_NAME).then((cache) => {
+                                return cache.addAll(ASSETS).catch(() => {});
+                            }).then(() => self.skipWaiting())
+                        );
+                    });
+
+                    self.addEventListener('activate', (e) => {
+                        e.waitUntil(
+                            caches.keys().then((keys) => {
+                                return Promise.all(
+                                    keys.map((key) => {
+                                        if (key !== CACHE_NAME) return caches.delete(key);
+                                    })
+                                );
+                            }).then(() => self.clients.claim())
+                        );
+                    });
+
+                    self.addEventListener('fetch', (e) => {
+                        if (e.request.method !== 'GET') return;
+                        e.respondWith(
+                            caches.match(e.request).then((cached) => {
+                                const networked = fetch(e.request).then((response) => {
+                                    const cacheCopy = response.clone();
+                                    caches.open(CACHE_NAME).then((cache) => cache.put(e.request, cacheCopy));
+                                    return response;
+                                }).catch(() => cached);
+                                return cached || networked;
+                            })
+                        );
+                    });
+                `;
+
+                const blob = new Blob([swScript], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('PWA Service Worker registered successfully.'))
+                    .catch((err) => console.log('Service Worker registration skipped:', err));
+            }
+        }
+
+        function setupPwaInstallPrompt() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+
+                const installBtn = document.getElementById('pwaInstallBtn');
+                const pwaBanner = document.getElementById('pwaBanner');
+
+                if (installBtn) installBtn.classList.remove('hidden');
+                if (pwaBanner && !localStorage.getItem('pwa_banner_dismissed')) {
+                    pwaBanner.classList.remove('hidden');
+                }
+            });
+
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                const installBtn = document.getElementById('pwaInstallBtn');
+                const pwaBanner = document.getElementById('pwaBanner');
+                if (installBtn) installBtn.classList.add('hidden');
+                if (pwaBanner) pwaBanner.classList.add('hidden');
+                showToast('TikTok Vault installed successfully!', 'check-circle');
+            });
+        }
+
+        function installPwa() {
+            if (!deferredPrompt) {
+                showToast('To install: open browser menu and select "Add to Home screen"', 'info');
+                return;
+            }
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    showToast('Installing TikTok Vault...', 'download-cloud');
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        function dismissPwaBanner() {
+            const pwaBanner = document.getElementById('pwaBanner');
+            if (pwaBanner) pwaBanner.classList.add('hidden');
+            localStorage.setItem('pwa_banner_dismissed', 'true');
+        }
+
+        function setupNetworkListeners() {
+            function updateOnlineStatus() {
+                const notice = document.getElementById('offlineNotice');
+                if (!navigator.onLine) {
+                    if (notice) notice.classList.remove('hidden');
+                    showToast('You are offline. Vault features remain available.', 'wifi-off');
+                } else {
+                    if (notice) notice.classList.add('hidden');
+                }
+            }
+
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+        }
+    </script>
+</body>
+</html>
