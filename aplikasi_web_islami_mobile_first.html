@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Muslim Hub - Aplikasi Islami Mobile</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            gold: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts: Amiri for Arabic & Inter for Latin -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom scrollbar and dynamic font sizing */
+        :root {
+            --arabic-font-size: 26px;
+        }
+
+        .font-arabic {
+            font-family: 'Amiri', serif;
+            font-size: var(--arabic-font-size);
+            line-height: 2.2;
+            direction: rtl;
+        }
+
+        /* Hide scrollbars for clean mobile feel */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Smooth tab transitions */
+        .page-content {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        .page-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom pulse for active audio player */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+        }
+        .audio-active {
+            animation: pulseGlow 2s infinite;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200 flex flex-col justify-between">
+
+    <!-- TOP HEADER -->
+    <header class="sticky top-0 z-40 bg-brand-800/95 dark:bg-slate-900/95 backdrop-blur border-b border-brand-700/50 dark:border-slate-800 text-white px-4 py-3 shadow-md">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-amber-400 flex items-center justify-center text-white shadow-inner font-bold text-lg">
+                    <i class="fa-solid font-bold fa-mosque text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base leading-tight tracking-wide">Muslim Hub</h1>
+                    <p class="text-[10px] text-emerald-200 dark:text-emerald-400 font-medium tracking-wider">PANDUAN ISLAMI HARIAN</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-1">
+                <!-- Bookmark View Button -->
+                <button onclick="toggleBookmarkModal(true)" title="Bookmark Tersimpan" class="p-2 rounded-lg hover:bg-brand-700 dark:hover:bg-slate-800 transition text-amber-300 relative">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span id="bookmarkBadge" class="hidden absolute -top-1 -right-1 bg-amber-500 text-slate-900 font-bold text-[9px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                </button>
+
+                <!-- Font Adjuster Button -->
+                <button onclick="toggleFontModal(true)" title="Pengaturan Font" class="p-2 rounded-lg hover:bg-brand-700 dark:hover:bg-slate-800 transition text-emerald-100">
+                    <i class="fa-solid fa-font"></i>
+                </button>
+
+                <!-- Theme Toggle Button -->
+                <button id="themeToggleBtn" onclick="toggleTheme()" title="Ubah Tema Siang/Malam" class="p-2 rounded-lg hover:bg-brand-700 dark:hover:bg-slate-800 transition text-amber-300">
+                    <i class="fa-solid fa-sun" id="themeIcon"></i>
+                </button>
+
+                <!-- Info Modal Button -->
+                <button onclick="toggleInfoModal(true)" title="Informasi & PWA" class="p-2 rounded-lg hover:bg-brand-700 dark:hover:bg-slate-800 transition text-emerald-100">
+                    <i class="fa-solid fa-circle-info text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto pb-24 px-3 sm:px-4 pt-3 max-w-md mx-auto w-full">
+
+        <!-- ================= PAGE 1: BERANDA ================= -->
+        <section id="page-home" class="page-content active space-y-4">
+            <!-- Greeting Card -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-700 via-brand-800 to-slate-900 text-white p-5 shadow-lg border border-brand-600/30">
+                <div class="absolute -right-6 -bottom-6 opacity-15 text-9xl text-white">
+                    <i class="fa-solid fa-kaaba"></i>
+                </div>
+                <div class="relative z-10">
+                    <span class="inline-block px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium backdrop-blur-sm border border-emerald-400/20 mb-2">
+                        <i class="fa-regular fa-calendar-check mr-1"></i> <span id="hijriDateDisplay">Hari Ini</span>
+                    </span>
+                    <h2 class="text-xl font-bold mb-1">Assalamu'alaikum 🙏</h2>
+                    <p class="text-xs text-emerald-100/90 leading-relaxed">
+                        "Barangsiapa menempuh jalan untuk menuntut ilmu, maka Allah akan memudahkan baginya jalan menuju surga." (HR. Muslim)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Features Grid -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center">
+                    <i class="fa-solid fa-grip mr-2 text-brand-600"></i> Menu Utama
+                </h3>
+                <div class="grid grid-cols-3 gap-2.5">
+                    <button onclick="switchTab('surah')" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/60 text-center hover:border-brand-500 transition group">
+                        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-brand-600 dark:text-emerald-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-book-quran"></i>
+                        </div>
+                        <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200">7 Surah</span>
+                        <span class="text-[9px] text-slate-400 block">Pilihan & Audio</span>
+                    </button>
+
+                    <button onclick="switchTab('dzikir')" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/60 text-center hover:border-brand-500 transition group">
+                        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-hands-praying"></i>
+                        </div>
+                        <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200">Dzikir</span>
+                        <span class="text-[9px] text-slate-400 block">Pagi & Petang</span>
+                    </button>
+
+                    <button onclick="switchTab('doa')" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/60 text-center hover:border-brand-500 transition group">
+                        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                        <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200">Doa Harian</span>
+                        <span class="text-[9px] text-slate-400 block">& Ziarah Kubur</span>
+                    </button>
+
+                    <button onclick="switchTab('sholat')" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/60 text-center hover:border-brand-500 transition group">
+                        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-person-praying"></i>
+                        </div>
+                        <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200">Sholat Sunnah</span>
+                        <span class="text-[9px] text-slate-400 block">Panduan Lengkap</span>
+                    </button>
+
+                    <button onclick="switchTab('tasbih')" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/60 text-center hover:border-brand-500 transition group">
+                        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200">Tasbih</span>
+                        <span class="text-[9px] text-slate-400 block">Counter Getar</span>
+                    </button>
+
+                    <button onclick="toggleBookmarkModal(true)" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700/60 text-center hover:border-brand-500 transition group">
+                        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-bookmark"></i>
+                        </div>
+                        <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200">Bookmark</span>
+                        <span class="text-[9px] text-slate-400 block">Favorit Kamu</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Highlights Banner: Doa Ziarah Kubur Fast Track -->
+            <div onclick="switchTab('doa'); filterDoaCategory('ziarah');" class="bg-gradient-to-r from-amber-600 to-brand-700 rounded-xl p-4 text-white shadow hover:opacity-95 cursor-pointer flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-[10px] uppercase tracking-wider font-bold bg-black/20 px-2 py-0.5 rounded text-amber-200">Fitur Khusus</span>
+                    <h4 class="font-bold text-sm">Doa Ziarah Kubur Lengkap</h4>
+                    <p class="text-xs text-amber-100">Salam ahli kubur, doa kebaikan & adab berziarah.</p>
+                </div>
+                <div class="text-2xl text-amber-200 pl-2">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Featured Surah Card Quick Pick -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <i class="fa-solid fa-star text-amber-500 mr-1"></i> Surah Populer Hari Ini
+                    </h3>
+                    <button onclick="switchTab('surah')" class="text-xs text-brand-600 dark:text-emerald-400 font-semibold hover:underline">Lihat Semua (7)</button>
+                </div>
+                <div class="space-y-2">
+                    <div onclick="openSurahDetail('kahfi')" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-between hover:bg-emerald-50 dark:hover:bg-slate-700 cursor-pointer transition">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold text-xs flex items-center justify-center">18</span>
+                            <div>
+                                <h4 class="text-xs font-bold">Al-Kahfi</h4>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">110 Ayat • Perlindungan Fitnah Dajjal</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-play-circle text-brand-600 dark:text-emerald-400 text-lg"></i>
+                    </div>
+                    <div onclick="openSurahDetail('yasin')" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-between hover:bg-emerald-50 dark:hover:bg-slate-700 cursor-pointer transition">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold text-xs flex items-center justify-center">36</span>
+                            <div>
+                                <h4 class="text-xs font-bold">Yasin</h4>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">83 Ayat • Jantung Al-Qur'an</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-play-circle text-brand-600 dark:text-emerald-400 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 2: 7 SURAH PILIHAN ================= -->
+        <section id="page-surah" class="page-content space-y-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center justify-between">
+                    <span><i class="fa-solid fa-book-quran text-brand-600 mr-2"></i> 7 Surah Utama Pilihan</span>
+                    <span class="text-xs font-normal bg-emerald-100 dark:bg-emerald-900/60 text-brand-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">Lengkap MP3</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Dilengkapi teks Arab Amiri, Latin, terjemahan Indonesia & pemutar mp3 audio.</p>
+            </div>
+
+            <!-- Surah List Cards -->
+            <div id="surahListContainer" class="space-y-3">
+                <!-- Javascript will inject 7 surah cards dynamically -->
+            </div>
+
+            <!-- Surah Detail View Overlay / Container -->
+            <div id="surahDetailView" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-lg border border-slate-200 dark:border-slate-700 space-y-4">
+                <div class="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-700">
+                    <button onclick="closeSurahDetail()" class="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center hover:text-brand-600">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Daftar
+                    </button>
+                    <button id="surahBookmarkBtn" onclick="toggleCurrentSurahBookmark()" class="text-slate-400 hover:text-amber-500">
+                        <i class="fa-regular fa-bookmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Active Surah Header Banner -->
+                <div class="text-center bg-gradient-to-b from-emerald-50 to-white dark:from-slate-700/60 dark:to-slate-800 p-4 rounded-xl border border-emerald-100 dark:border-slate-700">
+                    <h3 id="activeSurahTitle" class="text-lg font-bold text-brand-800 dark:text-emerald-300">Surah</h3>
+                    <p id="activeSurahSub" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Arti • Jumlah Ayat</p>
+                    
+                    <!-- Bismillah -->
+                    <div class="font-arabic text-xl my-3 text-brand-700 dark:text-emerald-400">
+                        بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                    </div>
+
+                    <!-- Audio Player Box -->
+                    <div class="mt-3 bg-white dark:bg-slate-900 rounded-xl p-3 shadow-inner border border-slate-200 dark:border-slate-700 flex flex-col items-center space-y-2">
+                        <div class="flex items-center space-x-3 w-full justify-center">
+                            <button id="playAudioBtn" onclick="toggleSurahAudio()" class="w-10 h-10 rounded-full bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center shadow transition transform active:scale-95">
+                                <i class="fa-solid fa-play text-sm" id="audioPlayIcon"></i>
+                            </button>
+                            <div class="text-left flex-1">
+                                <span class="text-xs font-semibold block text-slate-700 dark:text-slate-200" id="audioStatusText">Putar Murattal Full</span>
+                                <span class="text-[10px] text-slate-400" id="audioTimeDisplay">00:00 / 00:00</span>
+                            </div>
+                        </div>
+                        <input type="range" id="audioScrubber" value="0" min="0" max="100" class="w-full accent-brand-600 h-1 bg-slate-200 dark:bg-slate-700 rounded cursor-pointer" oninput="seekAudio(this.value)">
+                    </div>
+                </div>
+
+                <!-- Verses List -->
+                <div id="versesContainer" class="space-y-4 pt-2">
+                    <!-- Dynamic Ayah entries -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 3: DZIKIR PAGI & PETANG ================= -->
+        <section id="page-dzikir" class="page-content space-y-4">
+            <!-- Dzikir Selector Tabs -->
+            <div class="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl">
+                <button id="dzikirPagiTabBtn" onclick="switchDzikirType('pagi')" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-white dark:bg-slate-700 text-brand-700 dark:text-emerald-300 shadow-sm">
+                    <i class="fa-solid fa-sun mr-1 text-amber-500"></i> Dzikir Pagi
+                </button>
+                <button id="dzikirPetangTabBtn" onclick="switchDzikirType('petang')" class="flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-600 dark:text-slate-400">
+                    <i class="fa-solid fa-moon mr-1 text-indigo-400"></i> Dzikir Petang
+                </button>
+            </div>
+
+            <!-- Dzikir Info Header -->
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3 flex items-center space-x-3">
+                <i class="fa-solid fa-lightbulb text-amber-600 text-lg"></i>
+                <p class="text-xs text-amber-900 dark:text-amber-200 leading-snug">
+                    <strong id="dzikirGuideTitle">Waktu Dzikir Pagi:</strong> <span id="dzikirGuideDesc">Dibaca setelah sholat Subuh hingga terbit matahari/menjelang Dhuhur. Ketuk tombol angka tasbih untuk menghitung.</span>
+                </p>
+            </div>
+
+            <!-- Dzikir Items Container -->
+            <div id="dzikirContainer" class="space-y-3">
+                <!-- Javascript will render dzikir items -->
+            </div>
+        </section>
+
+        <!-- ================= PAGE 4: DOA-DOA PENDEK & ZIARAH KUBUR ================= -->
+        <section id="page-doa" class="page-content space-y-4">
+            <!-- Search Bar & Filter Bar -->
+            <div class="space-y-2">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                    <input type="text" id="doaSearchInput" oninput="filterDoaList()" placeholder="Cari doa harian atau Ziarah Kubur..." class="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+
+                <!-- Category Pills -->
+                <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+                    <button onclick="filterDoaCategory('all')" class="category-pill active px-3 py-1.5 rounded-full bg-brand-600 text-white font-medium whitespace-nowrap shadow-sm" data-cat="all">Semua Doa</button>
+                    <button onclick="filterDoaCategory('ziarah')" class="category-pill px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap border border-slate-200 dark:border-slate-700" data-cat="ziarah">Ziarah Kubur</button>
+                    <button onclick="filterDoaCategory('harian')" class="category-pill px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap border border-slate-200 dark:border-slate-700" data-cat="harian">Harian</button>
+                    <button onclick="filterDoaCategory('perlindungan')" class="category-pill px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap border border-slate-200 dark:border-slate-700" data-cat="perlindungan">Perlindungan</button>
+                    <button onclick="filterDoaCategory('rezeki')" class="category-pill px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap border border-slate-200 dark:border-slate-700" data-cat="rezeki">Ilmu & Rezeki</button>
+                </div>
+            </div>
+
+            <!-- Doa Items List -->
+            <div id="doaListContainer" class="space-y-3">
+                <!-- Javascript dynamic injection -->
+            </div>
+        </section>
+
+        <!-- ================= PAGE 5: PANDUAN SHOLAT SUNNAH ================= -->
+        <section id="page-sholat" class="page-content space-y-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center">
+                    <i class="fa-solid fa-person-praying text-sky-600 mr-2"></i> Panduan Sholat Sunnah
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Lengkap niat, waktu, jumlah rakaat, tata cara, dan doa setelah sholat.</p>
+            </div>
+
+            <div id="sholatListContainer" class="space-y-3">
+                <!-- Javascript will populate sholat sunnah guides -->
+            </div>
+        </section>
+
+        <!-- ================= PAGE 6: TASBIH DIGITAL STANDALONE ================= -->
+        <section id="page-tasbih" class="page-content space-y-4 text-center">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-md border border-slate-100 dark:border-slate-700">
+                <span class="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-emerald-400 bg-brand-50 dark:bg-slate-700 px-3 py-1 rounded-full">
+                    Tasbih Digital Standalone
+                </span>
+
+                <!-- Counter Big Circle Display -->
+                <div class="my-6 relative inline-flex items-center justify-center">
+                    <!-- Target Ring Graphic -->
+                    <svg class="w-52 h-52 transform -rotate-90">
+                        <circle cx="104" cy="104" r="92" stroke="currentColor" stroke-width="10" class="text-slate-100 dark:text-slate-700" fill="transparent" />
+                        <circle id="tasbihProgressCircle" cx="104" cy="104" r="92" stroke="currentColor" stroke-width="10" class="text-brand-600 dark:text-emerald-400 transition-all duration-200" fill="transparent" stroke-dasharray="578" stroke-dashoffset="578" stroke-linecap="round" />
+                    </svg>
+
+                    <!-- Inner Digital Display Button -->
+                    <button onclick="incrementTasbih()" class="absolute w-40 h-40 rounded-full bg-gradient-to-b from-brand-600 to-brand-800 text-white shadow-xl hover:opacity-95 active:scale-95 transition flex flex-col items-center justify-center select-none border-4 border-emerald-300/40">
+                        <span id="tasbihCounterNum" class="text-5xl font-black tracking-tight">0</span>
+                        <span class="text-[11px] text-emerald-200 font-medium mt-1">Ketuk Disini</span>
+                    </button>
+                </div>
+
+                <!-- Controls & Target Settings -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-center space-x-2 text-xs">
+                        <span class="text-slate-500 dark:text-slate-400">Target Hitungan:</span>
+                        <select id="tasbihTargetSelect" onchange="changeTasbihTarget(this.value)" class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 font-semibold outline-none">
+                            <option value="33">33 Kali</option>
+                            <option value="100" selected>100 Kali</option>
+                            <option value="1000">1000 Kali</option>
+                            <option value="0">Bebas / Tanpa Batas</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-center space-x-4 pt-2">
+                        <button onclick="toggleTasbihVibrate()" id="vibrateBtn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center space-x-1.5">
+                            <i class="fa-solid fa-mobile-retro"></i>
+                            <span id="vibrateStatusText">Getar: ON</span>
+                        </button>
+
+                        <button onclick="toggleTasbihSound()" id="soundBtn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center space-x-1.5">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span id="soundStatusText">Suara: ON</span>
+                        </button>
+
+                        <button onclick="resetTasbih()" class="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 text-xs font-semibold flex items-center space-x-1.5">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 pt-2">Total Lap / Putaran: <span id="tasbihLapCount" class="font-bold text-brand-600 dark:text-emerald-400">0</span></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-around py-2 px-1">
+            <button onclick="switchTab('home')" class="nav-btn active flex flex-col items-center flex-1 text-brand-600 dark:text-emerald-400 transition" data-tab="home">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">Beranda</span>
+            </button>
+
+            <button onclick="switchTab('surah')" class="nav-btn flex flex-col items-center flex-1 text-slate-400 dark:text-slate-500 transition" data-tab="surah">
+                <i class="fa-solid fa-book-quran text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">7 Surah</span>
+            </button>
+
+            <button onclick="switchTab('dzikir')" class="nav-btn flex flex-col items-center flex-1 text-slate-400 dark:text-slate-500 transition" data-tab="dzikir">
+                <i class="fa-solid fa-hands-praying text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">Dzikir</span>
+            </button>
+
+            <button onclick="switchTab('doa')" class="nav-btn flex flex-col items-center flex-1 text-slate-400 dark:text-slate-500 transition" data-tab="doa">
+                <i class="fa-solid fa-heart-pulse text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">Doa</span>
+            </button>
+
+            <button onclick="switchTab('sholat')" class="nav-btn flex flex-col items-center flex-1 text-slate-400 dark:text-slate-500 transition" data-tab="sholat">
+                <i class="fa-solid fa-person-praying text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">Sholat</span>
+            </button>
+
+            <button onclick="switchTab('tasbih')" class="nav-btn flex flex-col items-center flex-1 text-slate-400 dark:text-slate-500 transition" data-tab="tasbih">
+                <i class="fa-solid fa-calculator text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">Tasbih</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ================= MODALS & OVERLAYS ================= -->
+
+    <!-- 1. FONT SIZE ADJUSTER MODAL -->
+    <div id="fontModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+            <div class="flex items-center justify-between border-b pb-2 border-slate-100 dark:border-slate-700">
+                <h3 class="font-bold text-sm text-slate-800 dark:text-white"><i class="fa-solid fa-text-height mr-2 text-brand-600"></i> Ukuran Teks Arab</h3>
+                <button onclick="toggleFontModal(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Preview Box -->
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl text-center border border-slate-200 dark:border-slate-700">
+                <p class="text-xs text-slate-400 mb-1">Pratinjau Teks:</p>
+                <div class="font-arabic text-brand-700 dark:text-emerald-400">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ</div>
+            </div>
+
+            <!-- Slider -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs text-slate-500">
+                    <span>Kecil (20px)</span>
+                    <span id="fontValText" class="font-bold text-brand-600">26px</span>
+                    <span>Besar (38px)</span>
+                </div>
+                <input type="range" min="20" max="38" value="26" id="fontSizeSlider" oninput="updateArabicFontSize(this.value)" class="w-full accent-brand-600">
+            </div>
+
+            <button onclick="toggleFontModal(false)" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs transition">Selesai</button>
+        </div>
+    </div>
+
+    <!-- 2. BOOKMARKS MODAL -->
+    <div id="bookmarkModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4 max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-2 border-slate-100 dark:border-slate-700">
+                <h3 class="font-bold text-sm text-slate-800 dark:text-white"><i class="fa-solid fa-bookmark text-amber-500 mr-2"></i> Bookmark Favorit Saya</h3>
+                <button onclick="toggleBookmarkModal(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="bookmarkListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                <!-- Bookmarks dynamic render -->
+            </div>
+
+            <button onclick="toggleBookmarkModal(false)" class="w-full py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs transition">Tutup</button>
+        </div>
+    </div>
+
+    <!-- 3. INFO & PWA GUIDE MODAL (WITH 3 SUB-TABS) -->
+    <div id="infoModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 dark:border-slate-700 flex flex-col max-h-[85vh]">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-700">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-info text-brand-600 dark:text-emerald-400 text-lg"></i>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white">Informasi & Panduan PWA</h3>
+                </div>
+                <button onclick="toggleInfoModal(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Sub Tabs Header -->
+            <div class="flex border-b border-slate-200 dark:border-slate-700 mt-3 text-xs">
+                <button id="infoSubTab1" onclick="switchInfoTab(1)" class="flex-1 py-2 font-bold text-brand-600 dark:text-emerald-400 border-b-2 border-brand-600 dark:border-emerald-400">
+                    <i class="fa-solid fa-app-indicator mr-1"></i> Informasi
+                </button>
+                <button id="infoSubTab2" onclick="switchInfoTab(2)" class="flex-1 py-2 font-medium text-slate-500 dark:text-slate-400">
+                    <i class="fa-brands fa-android mr-1 text-emerald-500"></i> Android
+                </button>
+                <button id="infoSubTab3" onclick="switchInfoTab(3)" class="flex-1 py-2 font-medium text-slate-500 dark:text-slate-400">
+                    <i class="fa-brands fa-apple mr-1 text-slate-700 dark:text-slate-200"></i> Apple (iOS)
+                </button>
+            </div>
+
+            <!-- Modal Content Sub Views -->
+            <div class="flex-1 overflow-y-auto py-4 space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                <!-- SUB CONTENT 1: INFORMASI -->
+                <div id="infoSubContent1" class="space-y-3">
+                    <div class="p-3 bg-brand-50 dark:bg-slate-700/50 rounded-xl border border-brand-100 dark:border-slate-600">
+                        <h4 class="font-bold text-brand-800 dark:text-emerald-300 text-sm">Muslim Hub v1.0.0</h4>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Aplikasi Ibadah Islami Modern Mobile-First</p>
+                    </div>
+
+                    <h5 class="font-bold text-slate-800 dark:text-slate-200">Fitur Unggulan Aplikasi:</h5>
+                    <ul class="space-y-1.5 list-disc pl-4">
+                        <li><strong>7 Surah Pilihan:</strong> Al-Kahfi, Yasin, Al-Waqi'ah, Luqman, As-Sajdah, Ar-Rahman, dan Al-Mulk lengkap audio player, Latin & Arti.</li>
+                        <li><strong>Dzikir Pagi & Petang:</strong> Dilengkapi counter tasbih digital interaktif per-bacaan.</li>
+                        <li><strong>Doa-doa Pendek & Doa Ziarah Kubur:</strong> Pencarian cepat, fadhilah, serta teks Arab Amiri jernih.</li>
+                        <li><strong>Panduan Sholat Sunnah:</strong> Niat, tata cara, waktu, jumlah rakaat, dan doa setelahnya.</li>
+                        <li><strong>Tasbih Digital Standalone:</strong> Alat bantu dzikir universal dengan respon getar & target hitungan.</li>
+                        <li><strong>Fitur PWA:</strong> Bisa dipasang langsung di Layar Utama HP seperti aplikasi Native tanpa unduh di Store.</li>
+                    </ul>
+                </div>
+
+                <!-- SUB CONTENT 2: ANDROID PWA GUIDE -->
+                <div id="infoSubContent2" class="hidden space-y-3">
+                    <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                        <h4 class="font-bold text-emerald-800 dark:text-emerald-300 text-xs flex items-center">
+                            <i class="fa-brands fa-android text-base mr-2 text-emerald-600"></i> Cara Memasang di Android (Google Chrome):
+                        </h4>
+                    </div>
+
+                    <ol class="space-y-2.5 list-decimal pl-5">
+                        <li>Buka aplikasi web ini melalui peramban <strong>Google Chrome</strong> di smartphone Android Anda.</li>
+                        <li>Ketuk ikon <strong>Tiga Titik (⋮)</strong> di sudut kanan atas Chrome.</li>
+                        <li>Pilih menu <strong>"Tambahkan ke Layar Utama"</strong> (Add to Home Screen) atau <strong>"Install Aplikasi"</strong>.</li>
+                        <li>Konfirmasi dengan menekan tombol <strong>"Tambah"</strong>.</li>
+                        <li>Ikon aplikasi <strong>Muslim Hub</strong> akan muncul di layar HP Anda dan siap digunakan secara instan tanpa bilah browser.</li>
+                    </ol>
+                </div>
+
+                <!-- SUB CONTENT 3: APPLE PWA GUIDE -->
+                <div id="infoSubContent3" class="hidden space-y-3">
+                    <div class="p-3 bg-slate-100 dark:bg-slate-700/60 rounded-xl border border-slate-200 dark:border-slate-600">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs flex items-center">
+                            <i class="fa-brands fa-apple text-base mr-2 text-slate-800 dark:text-slate-100"></i> Cara Memasang di iOS / iPhone / iPad (Safari):
+                        </h4>
+                    </div>
+
+                    <ol class="space-y-2.5 list-decimal pl-5">
+                        <li>Buka link aplikasi ini khusus menggunakan browser <strong>Safari</strong> di iPhone/iPad Anda.</li>
+                        <li>Ketuk tombol <strong>Bagikan (Share / <i class="fa-solid fa-arrow-up-from-bracket"></i>)</strong> di bagian bawah layar.</li>
+                        <li>Gulir ke bawah pada opsi menu lalu pilih <strong>"Tambah ke Layar Utama"</strong> (Add to Home Screen).</li>
+                        <li>Ketik nama aplikasi (misal: <em>Muslim Hub</em>) lalu tekan <strong>"Tambah"</strong> di pojok kanan atas.</li>
+                        <li>Aplikasi siap diakses langsung dari Home Screen layaknya aplikasi App Store!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Footer Button -->
+            <button onclick="toggleInfoModal(false)" class="w-full mt-3 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs transition">
+                Mengerti & Tutup
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ================= DATA STORE ================= */
+
+        // 1. SURAH DATA (7 SURAH PILIHAN)
+        const SURAH_DATA = [
+            {
+                id: 'kahfi',
+                number: 18,
+                title: 'Al-Kahfi',
+                arabicTitle: 'الكهف',
+                meaning: 'Gua',
+                totalVerses: '110 Ayat',
+                fadhilah: 'Menerangi di antara dua Jum\'at & terhindar dari fitnah Dajjal.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/18.mp3',
+                verses: [
+                    {
+                        no: 1,
+                        arabic: 'ٱلْحَمْدُ لِلَّهِ ٱلَّذِىٓ أَنزَلَ عَلَىٰ عَبْدِهِ ٱلْكِتَٰبَ وَلَمْ يَجْعَل لَّهُۥ عِوَجَا ۜ',
+                        latin: 'Al-ḥamdu lillāhillażī anzala \'alā \'abdihil-kitāba wa lam yaj\'al lahū \'iwajā',
+                        translation: 'Segala puji bagi Allah yang telah menurunkan kepada hamba-Nya Al-Kitab (Al-Qur\'an) dan Dia tidak menjadikannya bengkok.'
+                    },
+                    {
+                        no: 2,
+                        arabic: 'قَيِّمًا لِّيُنذِرَ بَأْسًا شَدِيدًا مِّن لَّدُنْهُ وَيُبَشِّرَ ٱلْمُؤْمِنِينَ ٱلَّذِينَ يَعْمَلُونَ ٱلصَّٰلِحَٰتِ أَنَّ لَهُمْ أَجْرًا حَسَنًا',
+                        latin: 'Qayyimal liyunżira ba\'san syadīdam mil ladunhu wa yubasysyiral-mu\'minīnallażīna ya\'malūnaṣ-ṣāliḥāti anna lahum ajran ḥasanā',
+                        translation: 'Sebagai bimbingan yang lurus, untuk memperingatkan siksaan yang sangat pedih dari sisi Allah dan memberi berita gembira kepada orang-orang beriman yang mengerjakan kebajikan bahwa mereka akan mendapat balasan yang baik.'
+                    },
+                    {
+                        no: 10,
+                        arabic: 'إِذْ أَوَى ٱلْفِتْيَةُ إِلَى ٱلْكَهْفِ فَقَالُوا۟ رَبَّنَآ ءَاتِنَا مِن لَّدُنكَ رَحْمَةً وَهَيِّئْ لَنَا مِنْ أَمْرِنَا رَشَدًا',
+                        latin: 'Iż awal-fityatu ilal-kahfi fa qālū rabbanā ātinā mil ladunka raḥmataw wa hayyi\' lanā min amrinā rasyadā',
+                        translation: '(Ingatlah) ketika pemuda-pemuda itu berlindung ke dalam gua lalu mereka berdoa: "Ya Tuhan kami, berikanlah rahmat kepada kami dari sisi-Mu dan sempurnakanlah petunjuk yang lurus bagi kami dalam urusan kami ini."'
+                    }
+                ]
+            },
+            {
+                id: 'yasin',
+                number: 36,
+                title: 'Yasin',
+                arabicTitle: 'يس',
+                meaning: 'Yasin',
+                totalVerses: '83 Ayat',
+                fadhilah: 'Jantung Al-Qur\'an, memohon ampunan dosa & kelapangan rezeki.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/36.mp3',
+                verses: [
+                    {
+                        no: 1,
+                        arabic: 'يسٓ',
+                        latin: 'Yā-Sīn',
+                        translation: 'Yaa Siin.'
+                    },
+                    {
+                        no: 2,
+                        arabic: 'وَٱلْقُرْءَانِ ٱلْحَكِيمِ',
+                        latin: 'Wal-qur\'ānil-ḥakīm',
+                        translation: 'Demi Al-Qur\'an yang penuh hikmah,'
+                    },
+                    {
+                        no: 3,
+                        arabic: 'إِنَّكَ لَمِنَ ٱلْمُرْسَلِينَ',
+                        latin: 'Innaka laminal-mursalīn',
+                        translation: 'Sungguh, engkau (Muhammad) benar-benar salah seorang dari rasul-rasul,'
+                    },
+                    {
+                        no: 4,
+                        arabic: 'عَلَىٰ صِرَٰطٍ مُّسْتَقِيمٍ',
+                        latin: '\'Alā ṣirāṭim mustaqīm',
+                        translation: '(yang berada) di atas jalan yang lurus.'
+                    }
+                ]
+            },
+            {
+                id: 'waqiah',
+                number: 56,
+                title: 'Al-Waqi\'ah',
+                arabicTitle: 'الواقعة',
+                meaning: 'Hari Kiamat',
+                totalVerses: '96 Ayat',
+                fadhilah: 'Surah pembuka pintu rezeki & menghindarkan dari kefakiran.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/56.mp3',
+                verses: [
+                    {
+                        no: 1,
+                        arabic: 'إِذَا وَقَعَتِ ٱلْوَاقِعَةُ',
+                        latin: 'Iżā waqa\'atil-wāqi\'ah',
+                        translation: 'Apabila terjadi hari Kiamat,'
+                    },
+                    {
+                        no: 2,
+                        arabic: 'لَيْسَ لِوَقْعَتِهَا كَاذِبَةٌ',
+                        latin: 'Laisa liwaq\'atihā kāżibah',
+                        translation: 'Terjadinya tidak dapat didustakan (disangkal).'
+                    },
+                    {
+                        no: 3,
+                        arabic: 'خَافِضَةٌ رَّافِعَةٌ',
+                        latin: 'Khāfiḍatur rāfi\'ah',
+                        translation: '(Kejadian itu) merendahkan (satu golongan) dan meninggikan (golongan yang lain).'
+                    }
+                ]
+            },
+            {
+                id: 'luqman',
+                number: 31,
+                title: 'Luqman',
+                arabicTitle: 'لقمان',
+                meaning: 'Luqman Al-Hakim',
+                totalVerses: '34 Ayat',
+                fadhilah: 'Panduan pendidikan anak, hikmah, & rasa syukur kepada Allah.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/31.mp3',
+                verses: [
+                    {
+                        no: 12,
+                        arabic: 'وَلَقَدْ ءَاتَيْنَا لُقْمَٰنَ ٱلْحِكْمَةَ أَنِ ٱشْكُرْ لِلَّهِ ۚ وَمَن يَشْكُرْ فَإِنَّمَا يَشْكُرُ لِنَفْسِهِۦ ۖ وَمَن كَفَرَ فَإِنَّ ٱللَّهَ غَنِىٌّ حَمِيدٌ',
+                        latin: 'Wa laqad ātainā luqmānal-ḥikmata anisykur lillāh, wa may yasykur fa innamā yasykuru linafsih, wa man kafara fa innallāha ganiyyun ḥamīd',
+                        translation: 'Dan sungguh, telah Kami berikan hikmah kepada Luqman, yaitu: "Bersyukurlah kepada Allah!" Dan barangsiapa bersyukur (kepada Allah), maka sesungguhnya dia bersyukur untuk dirinya sendiri.'
+                    },
+                    {
+                        no: 13,
+                        arabic: 'وَإِذْ قَالَ لُقْمَٰنُ لِٱبْنِهِۦ وَهُوَ يَعِظُهُۥ يَٰبُنَىَّ لَا تُشْرِكْ بِٱللَّهِ ۖ إِنَّ ٱلشِّرْكَ لَظُلْمٌ عَظِيمٌ',
+                        latin: 'Wa iż qāla luqmānu libnihī wa huwa ya\'iẓuhū yā bunayya lā tusyrik billāh, innasysyirka laẓulmun \'aẓīm',
+                        translation: 'Dan (ingatlah) ketika Luqman berkata kepada anaknya, ketika dia memberi pelajaran kepadaya: "Wahai anakku! Janganlah engkau mempersekutukan Allah, sesungguhnya mempersekutukan (Allah) adalah benar-benar kezaliman yang besar."'
+                    }
+                ]
+            },
+            {
+                id: 'sajdah',
+                number: 32,
+                title: 'As-Sajdah',
+                arabicTitle: 'Sajdah',
+                meaning: 'Sujud',
+                totalVerses: '30 Ayat',
+                fadhilah: 'Amalan sunnah dibaca pada rakaat pertama sholat Subuh hari Jum\'at.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/32.mp3',
+                verses: [
+                    {
+                        no: 1,
+                        arabic: 'المٓ',
+                        latin: 'Alif-Lām-Mīm',
+                        translation: 'Alif Lam Mim.'
+                    },
+                    {
+                        no: 2,
+                        arabic: 'تَنزِيلُ ٱلْكِتَٰبِ لَا رَيْبَ فِيهِ مِن رَّبِّ ٱلْعَٰلَمِينَ',
+                        latin: 'Tanzīlul-kitābi lā raiba fīhi mir rabbil-\'ālamīn',
+                        translation: 'Turunnya Al-Kitab (Al-Qur\'an) tidak ada keraguan padanya, dari Tuhan seluruh alam.'
+                    }
+                ]
+            },
+            {
+                id: 'rahman',
+                number: 55,
+                title: 'Ar-Rahman',
+                arabicTitle: 'الرحمن',
+                meaning: 'Yang Maha Pemurah',
+                totalVerses: '78 Ayat',
+                fadhilah: 'Arus pengingat kenikmatan Allah yang melimpah.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/55.mp3',
+                verses: [
+                    {
+                        no: 1,
+                        arabic: 'ٱلرَّحْمَٰنُ',
+                        latin: 'Ar-Raḥmān',
+                        translation: '(Allah) Yang Maha Pengasih,'
+                    },
+                    {
+                        no: 2,
+                        arabic: 'عَلَّمَ ٱلْقُرْءَانَ',
+                        latin: '\'Allamal-qur\'ān',
+                        translation: 'Yang telah mengajarkan Al-Qur\'an.'
+                    },
+                    {
+                        no: 13,
+                        arabic: 'فَبِأَىِّ ءَالَآءِ رَبِّكُمَا تُكَذِّبَانِ',
+                        latin: 'Fa bi\'ayyi ālā\'i rabbikumā tukażżibān',
+                        translation: 'Maka nikmat Tuhanmu manakah yang kamu dustakan?'
+                    }
+                ]
+            },
+            {
+                id: 'mulk',
+                number: 67,
+                title: 'Al-Mulk',
+                arabicTitle: 'الملك',
+                meaning: 'Kerajaan',
+                totalVerses: '30 Ayat',
+                fadhilah: 'Penyelamat & pelindung dari siksa kubur bila dibaca sebelum tidur.',
+                audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/67.mp3',
+                verses: [
+                    {
+                        no: 1,
+                        arabic: 'تَبَٰرَكَ ٱلَّذِى بِيَدِهِ ٱلْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ',
+                        latin: 'Tabārakallażī biyadihil-mulku wa huwa \'alā kulli syai\'in qadīr',
+                        translation: 'Mahasuci Allah yang menguasai segala kerajaan, dan Dia Mahakuasa atas segala sesuatu.'
+                    },
+                    {
+                        no: 2,
+                        arabic: 'ٱلَّذِى خَلَقَ ٱلْمَوْتَ وَٱلْحَيَوٰةَ لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا ۚ وَهُوَ ٱلْعَزِيزُ ٱلْغَفُورُ',
+                        latin: 'Allażī khalaqal-mauta wal-ḥayāta liyabluwakum ayyukum aḥsanu \'amalā, wa huwal-\'azīzul-gafūr',
+                        translation: 'Yang menciptakan mati dan hidup, untuk menguji kamu, siapa di antara kamu yang lebih baik amalnya. Dan Dia Mahaperkasa, Maha Pengampun.'
+                    }
+                ]
+            }
+        ];
+
+        // 2. DZIKIR PAGI & PETANG DATA
+        const DZIKIR_PAGI_DATA = [
+            {
+                id: 'dp1',
+                title: 'Ayat Kursi',
+                target: 1,
+                arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ...',
+                latin: 'Allāhu lā ilāha illā huwal-ḥayyul-qayyūm, lā ta\'khużuhū sinatuw wa lā naum...',
+                translation: 'Allah, tidak ada tuhan selain Dia. Yang Mahahidup, yang terus-menerus mengurus (makhluk-Nya)...',
+                fadhilah: 'Barangsiapa membacanya di pagi hari, ia dilindungi dari gangguan jin hingga sore hari.'
+            },
+            {
+                id: 'dp2',
+                title: 'Surah Al-Ikhlas, Al-Falaq, An-Nas',
+                target: 3,
+                arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ... (dibaca masing-masing 3x)',
+                latin: 'Qul huwallāhu aḥad... Qul a\'ūżu birabbil-falaq... Qul a\'ūżu birabbin-nās...',
+                translation: 'Membaca Surah Al-Ikhlas, Al-Falaq, dan An-Nas sebanyak 3 kali.',
+                fadhilah: 'Dicukupkan darinya segala sesuatu sepanjang hari.'
+            },
+            {
+                id: 'dp3',
+                title: 'Sayyidul Istighfar',
+                target: 1,
+                arabic: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ خَلَقْتَنِي وَأَنَا عَبْدُكَ وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ...',
+                latin: 'Allāhumma anta rabbī lā ilāha illā anta khalaqtanī wa ana \'abduka wa ana \'alā \'ahdika wa wa\'dika mastata\'tu...',
+                translation: 'Ya Allah, Engkau adalah Rabbku, tidak ada tuhan selain Engkau. Engkau yang mencipatakanku dan aku adalah hamba-Mu...',
+                fadhilah: 'Barangsiapa membacanya di pagi hari lalu meninggal sebelum sore, ia termasuk penghuni surga.'
+            },
+            {
+                id: 'dp4',
+                title: 'Doa Perlindungan Bahaya',
+                target: 3,
+                arabic: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
+                latin: 'Bismillāhillażī lā yaḍurru ma\'asmihī syai\'un fil-arḍi wa lā fis-samā\'i wa huwas-samī\'ul-\'alīm',
+                translation: 'Dengan nama Allah yang bersama nama-Nya tidak ada sesuatupun yang membahayakan di bumi maupun di langit.',
+                fadhilah: 'Tidak ada sesuatupun yang dapat membahayakannya sepanjang hari.'
+            },
+            {
+                id: 'dp5',
+                title: 'Tasbih 100 Kali',
+                target: 100,
+                arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
+                latin: 'Subḥānallāhi wa biḥamdih',
+                translation: 'Mahasuci Allah dan dengan memuji-Nya.',
+                fadhilah: 'Dihapuskan dosa-dosanya meskipun sebanyak buih di lautan.'
+            }
+        ];
+
+        const DZIKIR_PETANG_DATA = [
+            {
+                id: 'dpet1',
+                title: 'Ayat Kursi (Sore)',
+                target: 1,
+                arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ...',
+                latin: 'Allāhu lā ilāha illā huwal-ḥayyul-qayyūm...',
+                translation: 'Membaca Ayat Kursi di sore hari.',
+                fadhilah: 'Dilindungi dari gangguan jin hingga pagi hari.'
+            },
+            {
+                id: 'dpet2',
+                title: '3 Qul Sore',
+                target: 3,
+                arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ... (3 Kali)',
+                latin: 'Surah Al-Ikhlas, Al-Falaq, An-Nas (Masing-masing 3x)',
+                translation: 'Membaca 3 Surah Al-Mu\'awwidzat di waktu petang.',
+                fadhilah: 'Benteng perlindungan malam hari dari segala kejahatan.'
+            },
+            {
+                id: 'dpet3',
+                title: 'Doa Memohon Perlindungan Malam',
+                target: 3,
+                arabic: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ',
+                latin: 'A\'ūżu bikalimātillāhit-tāmmāti min syarri mā khalaq',
+                translation: 'Aku berlindung dengan kalimat-kalimat Allah yang sempurna dari kejahatan makhluk yang Dia ciptakan.',
+                fadhilah: 'Terhindar dari sengatan hewan berbisa & gangguan malam.'
+            }
+        ];
+
+        // 3. DOA-DOA PENDEK & ZIARAH KUBUR DATA
+        const DOA_DATA = [
+            {
+                id: 'doa-ziarah-1',
+                title: 'Salam Saat Memasuki Areal Pemakaman (Ziarah Kubur)',
+                category: 'ziarah',
+                arabic: 'السَّلاَمُ عَلَيْكُمْ أَهْلَ الدِّيَارِ مِنَ الْمُؤْمِنِينَ وَالْمُسْلِمِينَ وَإِنَّا إِنْ شَاءَ اللَّهُ بِكُمْ لاَ حِقُونَ نَسْأَلُ اللَّهَ لَنَا وَلَكُمُ الْعَافِيَةَ',
+                latin: 'Assalāmu \'alaikum ahlad-diyāri minal-mu\'minīna wal-muslimīn, wa innā insyā\'allāhu bikum lāḥiqūn, nas\'alullāha lanā wa lakumul-\'āfiyah.',
+                translation: 'Semoga keselamatan tercurah kepada kamu wahai penghuni kubur dari kaum mukminin dan muslimin. Dan sesungguhnya kami insya Allah akan menyusul kalian. Kami memohon keselamatan kepada Allah untuk kami dan untuk kalian.',
+                fadhilah: 'Sunnah Rasulullah SAW saat mengunjungi makam / ziarah kubur untuk mendoakan ahli kubur.'
+            },
+            {
+                id: 'doa-ziarah-2',
+                title: 'Doa Khusus Memohonkan Ampunan Bagi Ahli Kubur',
+                category: 'ziarah',
+                arabic: 'اللَّهُمَّ اغْفِرْ لَهُ وَارْحَمْهُ وَعَافِهِ وَاعْفُ عَنْهُ وَأَكْرِمْ نُزُلَهُ وَوَسِّعْ مَدْخَلَهُ',
+                latin: 'Allāhummagfir lahū warḥamhu wa \'āfihī wa\'fu \'anhu wa akrim nuzulahū wa wassi\' madkhalah',
+                translation: 'Ya Allah, ampunilah dia, berilah rahmat kepadanya, sejahterakanlah dia, maafkanlah kesalahannya, muliakanlah tempat tinggalnya, dan lapangkanlah kuburnya.',
+                fadhilah: 'Meringankan beban siksa kubur dan memberikan kebahagiaan bagi ahli kubur.'
+            },
+            {
+                id: 'doa-1',
+                title: 'Doa Sebelum Tidur',
+                category: 'harian',
+                arabic: 'بِاسْمِكَ اللَّهُمَّ أَحْيَا وَبِاسْمِكَ أَمُوتُ',
+                latin: 'Bismikallāhumma aḥyā wa bismika amūt.',
+                translation: 'Dengan nama-Mu ya Allah aku hidup dan dengan nama-Mu aku mati.',
+                fadhilah: 'Mendapat perlindungan Allah sepanjang tidur hingga terbangun kembali.'
+            },
+            {
+                id: 'doa-2',
+                title: 'Doa Bangun Tidur',
+                category: 'harian',
+                arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
+                latin: 'Al-ḥamdu lillāhillażī aḥyānā ba\'da mā amātanā wa ilaihin-nusyūr.',
+                translation: 'Segala puji bagi Allah yang telah menghidupkan kami setelah mematikan kami dan hanya kepada-Nya kami dikembalikan.',
+                fadhilah: 'Wujud syukur atas nikmat umur dan kesempatan beramal hari ini.'
+            },
+            {
+                id: 'doa-3',
+                title: 'Doa Sebelum Makan',
+                category: 'harian',
+                arabic: 'اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا وَقِنَا عَذَابَ النَّارِ',
+                latin: 'Allāhumma bārik lanā fīmā razaqtanā wa qinā \'ażāban-nār.',
+                translation: 'Ya Allah, berkahilah rezeki yang telah Engkau berikan kepada kami dan peliharalah kami dari siksa neraka.',
+                fadhilah: 'Menjadikan makanan membawa keberkahan & menghindarkan syaitan dari ikut makan.'
+            },
+            {
+                id: 'doa-4',
+                title: 'Doa Mohon Kelapangan Rezeki & Ilmu Berkah',
+                category: 'rezeki',
+                arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا وَرِزْقًا طَيِّبًا وَعَمَلًا مُتَقَبَّلًا',
+                latin: 'Allāhumma innī as\'aluka \'ilman nāfi\'aw wa rizqan ṭayyibaw wa \'amalam mutaqabbalā.',
+                translation: 'Ya Allah, sesungguhnya aku memohon kepada-Mu ilmu yang bermanfaat, rezeki yang halal dan baik, serta amalan yang diterima.',
+                fadhilah: 'Dibaca rutin setelah Subuh untuk keberkahan aktivitas sepanjang hari.'
+            },
+            {
+                id: 'doa-5',
+                title: 'Doa Kebaikan Dunia & Akhirat (Jagad Buana)',
+                category: 'perlindungan',
+                arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+                latin: 'Rabbanā ātinā fid-dunyā ḥasanataw wa fil-ākhirati ḥasanataw wa qinā \'ażāban-nār.',
+                translation: 'Ya Tuhan kami, berilah kami kebaikan di dunia dan kebaikan di akhirat dan lindungilah kami dari azab neraka.',
+                fadhilah: 'Doa yang paling sering dibaca oleh Rasulullah SAW mencakup seluruh hajat.'
+            }
+        ];
+
+        // 4. PANDUAN SHOLAT SUNNAH DATA
+        const SHOLAT_SUNNAH_DATA = [
+            {
+                id: 'sholat-tahajjud',
+                title: 'Sholat Tahajjud',
+                rakat: '2 Rakaat (Minimal), Bebas Maksimal',
+                waktu: 'Sepertiga Malam Terakhir (Setelah Tidur)',
+                niatArabic: 'أُصَلِّي سُنَّةَ التَّهَجُّدِ رَكْعَتَيْنِ لِلَّهِ تَعَالَى',
+                niatLatin: 'Uṣallī sunnatat-tahajjudi rak\'ataini lillāhi ta\'ālā.',
+                niatTranslation: 'Aku berniat sholat sunnah Tahajjud dua rakaat karena Allah Ta\'ala.',
+                steps: [
+                    'Niat di dalam hati bersamaan dengan Takbiratul Ihram.',
+                    'Membaca Surah Al-Fatihah dilanjutkan surah pendek Al-Qur\'an.',
+                    'Rukuk, I\'tidal, Sujud dua kali sebagaimana sholat fardhu.',
+                    'Salam setiap dua rakaat.',
+                    'Dianjurkan ditutup dengan Sholat Sunnah Witir.'
+                ],
+                postDoa: 'اللَّهُمَّ لَكَ الْحَمْدُ أَنْتَ قَيِّمُ السَّمَاوَاتِ وَالأَرْضِ وَمَنْ فِيهِنَّ...',
+                postDoaLatin: 'Allāhumma lakal-ḥamdu anta qayyimus-samāwāti wal-arḍi wa man fīhinna...'
+            },
+            {
+                id: 'sholat-duha',
+                title: 'Sholat Duha',
+                rakat: '2 hingga 12 Rakaat',
+                waktu: 'Mulai Terbit Matahari Naik Sepenggal (± 07.00 - Menjelang Dhuhur)',
+                niatArabic: 'أُصَلِّي سُنَّةَ الضُّحَى رَكْعَتَيْنِ لِلَّهِ تَعَالَى',
+                niatLatin: 'Uṣallī sunnataḍ-ḍuḥā rak\'ataini lillāhi ta\'ālā.',
+                niatTranslation: 'Aku berniat sholat sunnah Duha dua rakaat karena Allah Ta\'ala.',
+                steps: [
+                    'Niat dan Takbiratul Ihram.',
+                    'Rakaat pertama dianjurkan membaca Surah Asy-Syams atau Al-Kafirun.',
+                    'Rakaat kedua membaca Surah Ad-Dhuha atau Al-Ikhlas.',
+                    'Mengucapkan salam di rakaat kedua.',
+                    'Membaca doa permohonan keberkahan rezeki.'
+                ],
+                postDoa: 'اللَّهُمَّ إِنَّ الضُّحَاءَ ضُحَاؤُكَ وَالْبَهَاءَ بَهَاؤُكَ وَالْجَمَالَ جَمَالُكَ...',
+                postDoaLatin: 'Allāhumma innaḍ-ḍuḥā\'a ḍuḥā\'uka wal-bahā\'a bahā\'uka wal-jamāla jamāluka...'
+            },
+            {
+                id: 'sholat-witir',
+                title: 'Sholat Witir',
+                rakat: '1, 3, atau Rakaat Ganjil',
+                waktu: 'Setelah Sholat Isya hingga Sebelum Subuh',
+                niatArabic: 'أُصَلِّي سُنَّةً مِنَ الْوِتْرِ رَكْعَةً لِلَّهِ تَعَالَى',
+                niatLatin: 'Uṣallī sunnatam minal-witri rak\'atal lillāhi ta\'ālā.',
+                niatTranslation: 'Aku berniat sholat sunnah Witir satu rakaat karena Allah Ta\'ala.',
+                steps: [
+                    'Bisa dikerjakan 2 rakaat salam + 1 rakaat salam.',
+                    'Pada rakaat terakhir membaca Al-Ikhlas, Al-Falaq, dan An-Nas.',
+                    'Merupakan penutup sholat malam.'
+                ],
+                postDoa: 'سُبْحَانَ الْمَلِكِ الْقُدُّوسِ (3x)',
+                postDoaLatin: 'Subḥānal-malikil-quddūs (3 kali).'
+            },
+            {
+                id: 'sholat-hajat',
+                title: 'Sholat Hajat',
+                rakat: '2 Rakaat',
+                waktu: 'Kapan saja (Kecuali waktu diharamkan sholat)',
+                niatArabic: 'أُصَلِّي سُنَّةَ الْحَاجَةِ رَكْعَتَيْنِ لِلَّهِ تَعَالَى',
+                niatLatin: 'Uṣallī sunnatal-ḥājati rak\'ataini lillāhi ta\'ālā.',
+                niatTranslation: 'Aku berniat sholat sunnah Hajat dua rakaat karena Allah Ta\'ala.',
+                steps: [
+                    'Mengerjakan 2 rakaat dengan khusyu\'.',
+                    'Membaca Ayat Kursi dan Al-Ikhlas.',
+                    'Setelah salam, bertasbih dan memohon hajat khusus kepada Allah.'
+                ],
+                postDoa: 'لاَ إِلَهَ إِلاَّ اللَّهُ الْحَلِيمُ الْكَرِيمُ سُبْحَانَ اللَّهِ رَبِّ الْعَرْشِ الْعَظِيمِ...',
+                postDoaLatin: 'Lā ilāha illallāhul-ḥalīmul-karīm, subḥānallāhi rabbil-\'arsyil-\'aẓīm...'
+            }
+        ];
+
+        /* ================= APP STATE MANAGEMENT ================= */
+        let state = {
+            currentTab: 'home',
+            activeDzikirType: 'pagi',
+            activeSurahId: null,
+            bookmarks: JSON.parse(localStorage.getItem('muslimHubBookmarks')) || [],
+            arabicFontSize: localStorage.getItem('muslimHubFontSize') || '26',
+            theme: localStorage.getItem('muslimHubTheme') || 'light',
+            dzikirCounters: {},
+            tasbihCount: 0,
+            tasbihTarget: 100,
+            tasbihLaps: 0,
+            tasbihVibrate: true,
+            tasbihSound: true
+        };
+
+        // Audio Player Instance
+        let currentAudio = null;
+
+        /* ================= INITIALIZATION ================= */
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            applyArabicFontSize(state.arabicFontSize);
+            renderSurahList();
+            renderDzikirList();
+            renderDoaList();
+            renderSholatList();
+            updateBookmarkBadge();
+            displayHijriDate();
+            
+            // Audio seeker tracking
+            setInterval(updateAudioProgress, 500);
+        });
+
+        /* ================= NAVIGATION & TAB SWITCHING ================= */
+        function switchTab(tabId) {
+            state.currentTab = tabId;
+            document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
+            const targetPage = document.getElementById(`page-${tabId}`);
+            if (targetPage) targetPage.classList.add('active');
+
+            // Update Nav Buttons State
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.tab === tabId) {
+                    btn.classList.add('text-brand-600', 'dark:text-emerald-400');
+                    btn.classList.remove('text-slate-400', 'dark:text-slate-500');
+                } else {
+                    btn.classList.remove('text-brand-600', 'dark:text-emerald-400');
+                    btn.classList.add('text-slate-400', 'dark:text-slate-500');
+                }
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ================= THEME TOGGLE (LIGHT & DARK MODE) ================= */
+        function initTheme() {
+            if (state.theme === 'dark' || (!('muslimHubTheme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-moon';
+                state.theme = 'dark';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun';
+                state.theme = 'light';
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun';
+                state.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-moon';
+                state.theme = 'dark';
+            }
+            localStorage.setItem('muslimHubTheme', state.theme);
+        }
+
+        /* ================= FONT SIZE CONTROLLER ================= */
+        function toggleFontModal(show) {
+            document.getElementById('fontModal').classList.toggle('hidden', !show);
+        }
+
+        function updateArabicFontSize(size) {
+            state.arabicFontSize = size;
+            localStorage.setItem('muslimHubFontSize', size);
+            applyArabicFontSize(size);
+        }
+
+        function applyArabicFontSize(size) {
+            document.documentElement.style.setProperty('--arabic-font-size', `${size}px`);
+            const slider = document.getElementById('fontSizeSlider');
+            if (slider) slider.value = size;
+            const text = document.getElementById('fontValText');
+            if (text) text.innerText = `${size}px`;
+        }
+
+        /* ================= SURAH PILIHAN LOGIC & RENDER ================= */
+        function renderSurahList() {
+            const container = document.getElementById('surahListContainer');
+            if (!container) return;
+
+            container.innerHTML = SURAH_DATA.map(surah => `
+                <div onclick="openSurahDetail('${surah.id}')" class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/80 hover:border-brand-500 transition cursor-pointer flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-emerald-400 font-bold text-sm flex items-center justify-center border border-brand-100 dark:border-slate-600">
+                            ${surah.number}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">${surah.title}</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">${surah.meaning} • ${surah.totalVerses}</p>
+                            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 line-clamp-1"><i class="fa-solid fa-gift mr-1"></i>${surah.fadhilah}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-arabic text-lg block text-brand-800 dark:text-emerald-300">${surah.arabicTitle}</span>
+                        <i class="fa-solid fa-circle-play text-brand-600 dark:text-emerald-400 text-base"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openSurahDetail(surahId) {
+            const surah = SURAH_DATA.find(s => s.id === surahId);
+            if (!surah) return;
+
+            state.activeSurahId = surahId;
+            document.getElementById('surahListContainer').classList.add('hidden');
+            const detailView = document.getElementById('surahDetailView');
+            detailView.classList.remove('hidden');
+
+            document.getElementById('activeSurahTitle').innerText = `${surah.number}. Surah ${surah.title} (${surah.arabicTitle})`;
+            document.getElementById('activeSurahSub').innerText = `${surah.meaning} • ${surah.totalVerses}`;
+
+            // Render Verses
+            const versesContainer = document.getElementById('versesContainer');
+            versesContainer.innerHTML = surah.verses.map(v => `
+                <div class="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-700 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-6 h-6 rounded-full bg-brand-600 text-white font-bold text-[10px] flex items-center justify-center">${v.no}</span>
+                        <button onclick="copyToClipboard('${v.arabic.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-brand-600 text-xs" title="Salin Teks Arab">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="font-arabic text-slate-800 dark:text-slate-100 text-right leading-loose">${v.arabic}</div>
+                    <div class="text-xs font-medium text-brand-700 dark:text-emerald-300 italic">${v.latin}</div>
+                    <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${v.translation}</div>
+                </div>
+            `).join('');
+
+            updateSurahBookmarkIcon();
+            setupAudio(surah.audioUrl);
+        }
+
+        function closeSurahDetail() {
+            if (currentAudio) {
+                currentAudio.pause();
+                document.getElementById('audioPlayIcon').className = 'fa-solid fa-play text-sm';
+            }
+            document.getElementById('surahDetailView').classList.add('hidden');
+            document.getElementById('surahListContainer').classList.remove('hidden');
+        }
+
+        /* ================= AUDIO PLAYER CORE ================= */
+        function setupAudio(url) {
+            if (currentAudio) {
+                currentAudio.pause();
+            }
+            currentAudio = new Audio(url);
+            document.getElementById('audioPlayIcon').className = 'fa-solid fa-play text-sm';
+            document.getElementById('audioStatusText').innerText = 'Putar Murattal Full';
+
+            currentAudio.addEventListener('ended', () => {
+                document.getElementById('audioPlayIcon').className = 'fa-solid fa-play text-sm';
+                document.getElementById('audioStatusText').innerText = 'Putar Murattal Full';
+            });
+        }
+
+        function toggleSurahAudio() {
+            if (!currentAudio) return;
+            const playIcon = document.getElementById('audioPlayIcon');
+            const statusText = document.getElementById('audioStatusText');
+
+            if (currentAudio.paused) {
+                currentAudio.play();
+                playIcon.className = 'fa-solid fa-pause text-sm';
+                statusText.innerText = 'Memutar Audio...';
+            } else {
+                currentAudio.pause();
+                playIcon.className = 'fa-solid fa-play text-sm';
+                statusText.innerText = 'Audio Dijeda';
+            }
+        }
+
+        function updateAudioProgress() {
+            if (!currentAudio || !currentAudio.duration) return;
+            const scrubber = document.getElementById('audioScrubber');
+            const display = document.getElementById('audioTimeDisplay');
+
+            const pct = (currentAudio.currentTime / currentAudio.duration) * 100;
+            scrubber.value = pct || 0;
+
+            const formatTime = (sec) => {
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+            };
+
+            display.innerText = `${formatTime(currentAudio.currentTime)} / ${formatTime(currentAudio.duration)}`;
+        }
+
+        function seekAudio(val) {
+            if (!currentAudio || !currentAudio.duration) return;
+            currentAudio.currentTime = (val / 100) * currentAudio.duration;
+        }
+
+        /* ================= DZIKIR PAGI PETANG LOGIC ================= */
+        function switchDzikirType(type) {
+            state.activeDzikirType = type;
+            const pagiBtn = document.getElementById('dzikirPagiTabBtn');
+            const petangBtn = document.getElementById('dzikirPetangTabBtn');
+
+            if (type === 'pagi') {
+                pagiBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition bg-white dark:bg-slate-700 text-brand-700 dark:text-emerald-300 shadow-sm';
+                petangBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-600 dark:text-slate-400';
+                document.getElementById('dzikirGuideTitle').innerText = 'Waktu Dzikir Pagi:';
+                document.getElementById('dzikirGuideDesc').innerText = 'Dibaca setelah sholat Subuh hingga terbit matahari/menjelang Dhuhur.';
+            } else {
+                petangBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition bg-white dark:bg-slate-700 text-brand-700 dark:text-emerald-300 shadow-sm';
+                pagiBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-600 dark:text-slate-400';
+                document.getElementById('dzikirGuideTitle').innerText = 'Waktu Dzikir Petang:';
+                document.getElementById('dzikirGuideDesc').innerText = 'Dibaca setelah sholat Ashar hingga tenggelam matahari / sesudah Isya.';
+            }
+
+            renderDzikirList();
+        }
+
+        function renderDzikirList() {
+            const container = document.getElementById('dzikirContainer');
+            const data = state.activeDzikirType === 'pagi' ? DZIKIR_PAGI_DATA : DZIKIR_PETANG_DATA;
+
+            container.innerHTML = data.map(item => {
+                const count = state.dzikirCounters[item.id] || 0;
+                const isCompleted = count >= item.target;
+
+                return `
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-white">${item.title}</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isCompleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}">
+                                ${isCompleted ? '✓ Selesai' : `Target: ${item.target}x`}
+                            </span>
+                        </div>
+
+                        <div class="font-arabic text-slate-800 dark:text-slate-100 leading-loose">${item.arabic}</div>
+                        <div class="text-xs font-medium text-brand-700 dark:text-emerald-300 italic">${item.latin}</div>
+                        <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${item.translation}</div>
+                        <div class="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-100 dark:border-amber-900/40">
+                            <i class="fa-solid fa-star mr-1"></i>${item.fadhilah}
+                        </div>
+
+                        <!-- Interactive Digital Tasbih Counter per Dzikir -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <button onclick="resetDzikirCounter('${item.id}')" class="text-xs text-slate-400 hover:text-rose-500">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+                            </button>
+
+                            <button onclick="tapDzikirCounter('${item.id}', ${item.target})" class="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 transition transform active:scale-95 shadow ${isCompleted ? 'bg-emerald-600 text-white' : 'bg-brand-600 hover:bg-brand-700 text-white'}">
+                                <i class="fa-solid fa-fingerprint text-sm"></i>
+                                <span>Dzikir (${count} / ${item.target})</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function tapDzikirCounter(id, target) {
+            let current = state.dzikirCounters[id] || 0;
+            if (current < target) {
+                current++;
+                state.dzikirCounters[id] = current;
+                triggerHaptic();
+                playClickSound();
+                renderDzikirList();
+            }
+        }
+
+        function resetDzikirCounter(id) {
+            state.dzikirCounters[id] = 0;
+            renderDzikirList();
+        }
+
+        /* ================= DOA-DOA PENDEK & ZIARAH KUBUR LOGIC ================= */
+        let activeDoaCategory = 'all';
+
+        function renderDoaList() {
+            const container = document.getElementById('doaListContainer');
+            const searchVal = (document.getElementById('doaSearchInput')?.value || '').toLowerCase();
+
+            const filtered = DOA_DATA.filter(item => {
+                const matchCat = activeDoaCategory === 'all' || item.category === activeDoaCategory;
+                const matchSearch = item.title.toLowerCase().includes(searchVal) || 
+                                    item.translation.toLowerCase().includes(searchVal) ||
+                                    item.latin.toLowerCase().includes(searchVal);
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass text-2xl mb-2 block"></i>
+                        Doa tidak ditemukan. Coba kata kunci lain.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(doa => {
+                const isBookmarked = state.bookmarks.some(b => b.id === doa.id);
+                return `
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border ${doa.category === 'ziarah' ? 'border-amber-300 dark:border-amber-700/60' : 'border-slate-100 dark:border-slate-700'} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${doa.category === 'ziarah' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300' : 'bg-brand-50 text-brand-700 dark:bg-slate-700 dark:text-emerald-300'}">
+                                ${doa.category === 'ziarah' ? ' Doa Ziarah Kubur' : 'Doa Harian'}
+                            </span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="copyToClipboard('${doa.arabic.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-brand-600 text-xs" title="Salin Teks">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                                <button onclick="toggleBookmark('${doa.id}', 'doa')" class="text-xs ${isBookmarked ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}">
+                                    <i class="${isBookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <h3 class="font-bold text-sm text-slate-800 dark:text-white">${doa.title}</h3>
+                        <div class="font-arabic text-slate-800 dark:text-slate-100 leading-loose">${doa.arabic}</div>
+                        <div class="text-xs font-medium text-brand-700 dark:text-emerald-300 italic">${doa.latin}</div>
+                        <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${doa.translation}</div>
+                        
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                            <strong>Fadhilah & Keutamaan:</strong> ${doa.fadhilah}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterDoaCategory(cat) {
+            activeDoaCategory = cat;
+            document.querySelectorAll('.category-pill').forEach(btn => {
+                if (btn.dataset.cat === cat) {
+                    btn.className = 'category-pill active px-3 py-1.5 rounded-full bg-brand-600 text-white font-medium whitespace-nowrap shadow-sm';
+                } else {
+                    btn.className = 'category-pill px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap border border-slate-200 dark:border-slate-700';
+                }
+            });
+            renderDoaList();
+        }
+
+        function filterDoaList() {
+            renderDoaList();
+        }
+
+        /* ================= SHOLAT SUNNAH GUIDE LOGIC ================= */
+        function renderSholatList() {
+            const container = document.getElementById('sholatListContainer');
+            if (!container) return;
+
+            container.innerHTML = SHOLAT_SUNNAH_DATA.map(item => `
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                        <h3 class="font-bold text-sm text-slate-800 dark:text-white">${item.title}</h3>
+                        <span class="text-[10px] font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 px-2.5 py-0.5 rounded-full">
+                            ${item.rakat}
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <i class="fa-regular fa-clock mr-1 text-sky-600"></i><strong>Waktu Utama:</strong> ${item.waktu}
+                    </p>
+
+                    <!-- Niat Sholat Box -->
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl space-y-1.5 border border-slate-200/60 dark:border-slate-700">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Lafadz Niat:</span>
+                        <div class="font-arabic text-brand-800 dark:text-emerald-300">${item.niatArabic}</div>
+                        <div class="text-xs italic font-medium text-brand-700 dark:text-emerald-400">${item.niatLatin}</div>
+                        <div class="text-xs text-slate-600 dark:text-slate-300">"${item.niatTranslation}"</div>
+                    </div>
+
+                    <!-- Steps List -->
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tata Cara Ringkas:</span>
+                        <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-disc pl-4">
+                            ${item.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <!-- Post Doa -->
+                    <div class="bg-amber-50 dark:bg-amber-950/30 p-2.5 rounded-xl border border-amber-100 dark:border-amber-900/30 text-xs">
+                        <strong class="text-amber-800 dark:text-amber-300 block mb-1">Doa/Dzikir Setelah Sholat:</strong>
+                        <div class="font-arabic text-slate-800 dark:text-slate-100">${item.postDoa}</div>
+                        <div class="italic text-amber-700 dark:text-amber-400 mt-1">${item.postDoaLatin}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* ================= STANDALONE TASBIH DIGITAL LOGIC ================= */
+        function incrementTasbih() {
+            state.tasbihCount++;
+
+            // Handle Target Reached
+            if (state.tasbihTarget > 0 && state.tasbihCount >= state.tasbihTarget) {
+                state.tasbihLaps++;
+                state.tasbihCount = 0;
+                triggerLongHaptic();
+            } else {
+                triggerHaptic();
+            }
+
+            playClickSound();
+            updateTasbihDisplay();
+        }
+
+        function updateTasbihDisplay() {
+            document.getElementById('tasbihCounterNum').innerText = state.tasbihCount;
+            document.getElementById('tasbihLapCount').innerText = state.tasbihLaps;
+
+            // SVG Progress ring math
+            const circle = document.getElementById('tasbihProgressCircle');
+            const circumference = 2 * Math.PI * 92; // 578
+            if (state.tasbihTarget > 0) {
+                const offset = circumference - (state.tasbihCount / state.tasbihTarget) * circumference;
+                circle.style.strokeDashoffset = offset;
+            } else {
+                circle.style.strokeDashoffset = 0;
+            }
+        }
+
+        function changeTasbihTarget(val) {
+            state.tasbihTarget = parseInt(val);
+            state.tasbihCount = 0;
+            updateTasbihDisplay();
+        }
+
+        function resetTasbih() {
+            state.tasbihCount = 0;
+            state.tasbihLaps = 0;
+            updateTasbihDisplay();
+        }
+
+        function toggleTasbihVibrate() {
+            state.tasbihVibrate = !state.tasbihVibrate;
+            document.getElementById('vibrateStatusText').innerText = `Getar: ${state.tasbihVibrate ? 'ON' : 'OFF'}`;
+        }
+
+        function toggleTasbihSound() {
+            state.tasbihSound = !state.tasbihSound;
+            document.getElementById('soundStatusText').innerText = `Suara: ${state.tasbihSound ? 'ON' : 'OFF'}`;
+        }
+
+        /* Audio feedback for Tasbih click using Web Audio API synthesis */
+        function playClickSound() {
+            if (!state.tasbihSound) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.05);
+
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+            } catch (e) {}
+        }
+
+        function triggerHaptic() {
+            if (state.tasbihVibrate && navigator.vibrate) {
+                navigator.vibrate(25);
+            }
+        }
+
+        function triggerLongHaptic() {
+            if (state.tasbihVibrate && navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
+        }
+
+        /* ================= BOOKMARK SYSTEM ================= */
+        function toggleBookmark(id, type) {
+            const idx = state.bookmarks.findIndex(b => b.id === id);
+            if (idx > -1) {
+                state.bookmarks.splice(idx, 1);
+            } else {
+                state.bookmarks.push({ id, type, date: new Date().toISOString() });
+            }
+            localStorage.setItem('muslimHubBookmarks', JSON.stringify(state.bookmarks));
+            updateBookmarkBadge();
+            renderDoaList();
+            renderBookmarkModalList();
+        }
+
+        function toggleCurrentSurahBookmark() {
+            if (!state.activeSurahId) return;
+            toggleBookmark(state.activeSurahId, 'surah');
+            updateSurahBookmarkIcon();
+        }
+
+        function updateSurahBookmarkIcon() {
+            const btn = document.getElementById('surahBookmarkBtn');
+            const isBookmarked = state.bookmarks.some(b => b.id === state.activeSurahId);
+            if (btn) {
+                btn.className = isBookmarked ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500';
+                btn.innerHTML = `<i class="${isBookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark text-lg"></i>`;
+            }
+        }
+
+        function updateBookmarkBadge() {
+            const badge = document.getElementById('bookmarkBadge');
+            if (!badge) return;
+            if (state.bookmarks.length > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = state.bookmarks.length;
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function toggleBookmarkModal(show) {
+            document.getElementById('bookmarkModal').classList.toggle('hidden', !show);
+            if (show) renderBookmarkModalList();
+        }
+
+        function renderBookmarkModalList() {
+            const container = document.getElementById('bookmarkListContainer');
+            if (state.bookmarks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-slate-400 text-xs">
+                        <i class="fa-regular fa-bookmark text-3xl mb-2 block"></i>
+                        Belum ada bookmark tersimpan.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = state.bookmarks.map(b => {
+                if (b.type === 'surah') {
+                    const surah = SURAH_DATA.find(s => s.id === b.id);
+                    if (!surah) return '';
+                    return `
+                        <div onclick="toggleBookmarkModal(false); switchTab('surah'); openSurahDetail('${surah.id}');" class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl flex items-center justify-between cursor-pointer hover:bg-emerald-50 dark:hover:bg-slate-700">
+                            <div>
+                                <span class="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">Surah</span>
+                                <h4 class="text-xs font-bold text-slate-800 dark:text-white mt-1">Surah ${surah.title}</h4>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </div>
+                    `;
+                } else {
+                    const doa = DOA_DATA.find(d => d.id === b.id);
+                    if (!doa) return '';
+                    return `
+                        <div onclick="toggleBookmarkModal(false); switchTab('doa');" class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl flex items-center justify-between cursor-pointer hover:bg-emerald-50 dark:hover:bg-slate-700">
+                            <div>
+                                <span class="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">Doa</span>
+                                <h4 class="text-xs font-bold text-slate-800 dark:text-white mt-1">${doa.title}</h4>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        /* ================= INFO MODAL & SUB TABS ================= */
+        function toggleInfoModal(show) {
+            document.getElementById('infoModal').classList.toggle('hidden', !show);
+        }
+
+        function switchInfoTab(tabNum) {
+            [1, 2, 3].forEach(n => {
+                const btn = document.getElementById(`infoSubTab${n}`);
+                const content = document.getElementById(`infoSubContent${n}`);
+
+                if (n === tabNum) {
+                    btn.className = 'flex-1 py-2 font-bold text-brand-600 dark:text-emerald-400 border-b-2 border-brand-600 dark:border-emerald-400';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = 'flex-1 py-2 font-medium text-slate-500 dark:text-slate-400';
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        /* ================= UTILITY FUNCTIONS ================= */
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            showToast("Teks Arab berhasil disalin!");
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 transition-opacity duration-300';
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 2000);
+        }
+
+        function displayHijriDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date().toLocaleDateString('id-ID', options);
+            const dateEl = document.getElementById('hijriDateDisplay');
+            if (dateEl) dateEl.innerText = today;
+        }
+    </script>
+</body>
+</html>
